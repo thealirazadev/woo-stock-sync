@@ -54,6 +54,7 @@ if ( $wss_has_wp_suite ) {
 
 	require __DIR__ . '/support/stubs.php';
 	require dirname( __DIR__ ) . '/includes/class-wss-feed.php';
+	require dirname( __DIR__ ) . '/includes/class-wss-runner.php';
 }
 
 require __DIR__ . '/support/class-wss-integration-testcase.php';

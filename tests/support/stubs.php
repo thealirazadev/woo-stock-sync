@@ -131,3 +131,39 @@ if ( ! function_exists( 'trailingslashit' ) ) {
 		return rtrim( $string, '/\\' ) . '/';
 	}
 }
+if ( ! function_exists( 'add_action' ) ) {
+	function add_action( $tag, $callback, $priority = 10, $accepted_args = 1 ) {
+		unset( $tag, $callback, $priority, $accepted_args );
+		return true;
+	}
+}
+if ( ! function_exists( 'current_time' ) ) {
+	function current_time( $type, $gmt = 0 ) {
+		unset( $type, $gmt );
+		return gmdate( 'Y-m-d H:i:s' );
+	}
+}
+if ( ! isset( $GLOBALS['wss_stub_options'] ) ) {
+	$GLOBALS['wss_stub_options'] = array();
+}
+if ( ! function_exists( 'add_option' ) ) {
+	function add_option( $name, $value = '', $deprecated = '', $autoload = 'yes' ) {
+		unset( $deprecated, $autoload );
+		if ( array_key_exists( $name, $GLOBALS['wss_stub_options'] ) ) {
+			return false;
+		}
+		$GLOBALS['wss_stub_options'][ $name ] = $value;
+		return true;
+	}
+}
+if ( ! function_exists( 'get_option' ) ) {
+	function get_option( $name, $default_value = false ) {
+		return array_key_exists( $name, $GLOBALS['wss_stub_options'] ) ? $GLOBALS['wss_stub_options'][ $name ] : $default_value;
+	}
+}
+if ( ! function_exists( 'delete_option' ) ) {
+	function delete_option( $name ) {
+		unset( $GLOBALS['wss_stub_options'][ $name ] );
+		return true;
+	}
+}
