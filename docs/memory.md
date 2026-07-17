@@ -10,7 +10,18 @@ in the Decisions log with its reason.
 
 ## In progress
 
-- Phase 2: batched apply, locking, rollback.
+- Phase 3: scheduled sync, live progress, cancel.
+
+## Phase 2 (complete)
+
+- Atomic single-run lock via `add_option( 'wss_active_run', ... )` (acquire on fetch/apply/rollback,
+  release at previewed/terminal); batched apply through Action Scheduler with per-row try/catch
+  isolation (wc_error), snapshot-once per product before write, resume from the DB cursor (stall
+  detection at 10 min idle + no pending action), roll back the latest applied run from snapshots
+  (product_missing handled), per-product/variation "Lock from stock sync" checkbox skipped in diff
+  and apply, and a stale-lock release action (15 min idle). Verification: `phpcs` clean; `phpunit`
+  19 tests (lock mutex verified live; apply/diff/rollback integration tests skip without the WP
+  suite).
 
 ## Phase 1 (complete)
 
