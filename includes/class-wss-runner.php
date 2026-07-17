@@ -27,6 +27,7 @@ class WSS_Runner {
 	 */
 	public function __construct() {
 		add_action( 'wss_fetch_run', array( $this, 'handle_fetch' ) );
+		add_action( 'wss_diff_batch', array( $this, 'handle_diff_batch' ) );
 	}
 
 	/**
@@ -253,6 +254,272 @@ class WSS_Runner {
 			),
 			'info'
 		);
+	}
+
+	/**
+	 * Background action: diff a batch of staged rows against current product data.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return void
+	 */
+	public function handle_diff_batch( $run_id ) {
+		$run = wss_get_run( $run_id );
+		if ( ! $run || 'diffing' !== $run->status ) {
+			return;
+		}
+
+		global $wpdb;
+
+		$batch = (int) apply_filters( 'wss_batch_size', WSS_DEFAULT_BATCH_SIZE );
+		$rows  = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, sku, new_values FROM {$wpdb->prefix}wss_rows WHERE run_id = %d AND status = 'staged' ORDER BY id ASC LIMIT %d",
+				$run_id,
+				$batch
+			)
+		);
+
+		foreach ( (array) $rows as $row ) {
+			$this->diff_row( $row );
+		}
+
+		$remaining = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}wss_rows WHERE run_id = %d AND status = 'staged'",
+				$run_id
+			)
+		);
+
+		if ( $remaining > 0 ) {
+			as_enqueue_async_action( 'wss_diff_batch', array( $run_id ), 'woo-stock-sync' );
+			return;
+		}
+
+		$this->finalize_preview( $run_id );
+	}
+
+	/**
+	 * Diff one staged row: resolve its SKU and compute its planned action.
+	 *
+	 * @param object $row Row with id, sku, new_values.
+	 * @return void
+	 */
+	private function diff_row( $row ) {
+		$new_values = json_decode( $row->new_values, true );
+		if ( ! is_array( $new_values ) ) {
+			$new_values = array();
+		}
+
+		$product_id = wc_get_product_id_by_sku( $row->sku );
+		if ( ! $product_id ) {
+			$this->update_row(
+				$row->id,
+				array(
+					'status'  => 'skipped',
+					'reason'  => 'unknown_sku',
+					'message' => __( 'No product matches this SKU.', 'woo-stock-sync' ),
+				)
+			);
+			return;
+		}
+
+		$product = wc_get_product( $product_id );
+		if ( ! $product ) {
+			$this->update_row(
+				$row->id,
+				array(
+					'product_id' => $product_id,
+					'status'     => 'skipped',
+					'reason'     => 'unknown_sku',
+					'message'    => __( 'The matched product could not be loaded.', 'woo-stock-sync' ),
+				)
+			);
+			return;
+		}
+
+		$diff = $this->compute_field_diff( $product, $new_values );
+
+		$this->update_row(
+			$row->id,
+			array(
+				'product_id'     => $product_id,
+				'current_values' => wp_json_encode( $diff['current'] ),
+				'status'         => $diff['status'],
+				'reason'         => $diff['reason'],
+				'message'        => $diff['message'],
+			)
+		);
+	}
+
+	/**
+	 * Compare a product's current values to the feed's new values.
+	 *
+	 * @param WC_Product $product    Product.
+	 * @param array      $new_values Field => new value.
+	 * @return array status, reason, message, current (field => current value).
+	 */
+	private function compute_field_diff( $product, array $new_values ) {
+		$current       = array();
+		$changed       = false;
+		$applicable    = 0;
+		$stock_skipped = false;
+
+		foreach ( $new_values as $field => $new ) {
+			if ( 'stock' === $field ) {
+				if ( ! $product->managing_stock() ) {
+					$stock_skipped = true;
+					continue;
+				}
+				$cur              = $product->get_stock_quantity();
+				$current['stock'] = $cur;
+				++$applicable;
+				if ( null === $cur || (float) $cur !== (float) $new ) {
+					$changed = true;
+				}
+			} elseif ( 'regular_price' === $field ) {
+				$cur                      = $product->get_regular_price( 'edit' );
+				$current['regular_price'] = $cur;
+				++$applicable;
+				if ( ! $this->price_equals( $cur, $new ) ) {
+					$changed = true;
+				}
+			} elseif ( 'sale_price' === $field ) {
+				$cur                   = $product->get_sale_price( 'edit' );
+				$current['sale_price'] = $cur;
+				++$applicable;
+				if ( '' === $new ) {
+					if ( '' !== (string) $cur ) {
+						$changed = true;
+					}
+				} elseif ( ! $this->price_equals( $cur, $new ) ) {
+					$changed = true;
+				}
+			}
+		}
+
+		if ( 0 === $applicable ) {
+			if ( $stock_skipped ) {
+				return array(
+					'status'  => 'skipped',
+					'reason'  => 'stock_not_managed',
+					'message' => __( 'This product does not manage stock, so there is nothing to change.', 'woo-stock-sync' ),
+					'current' => $current,
+				);
+			}
+			return array(
+				'status'  => 'no_change',
+				'reason'  => '',
+				'message' => '',
+				'current' => $current,
+			);
+		}
+
+		if ( $changed ) {
+			return array(
+				'status'  => 'planned',
+				'reason'  => '',
+				'message' => $stock_skipped ? __( 'Stock is not managed for this product and will be left unchanged.', 'woo-stock-sync' ) : '',
+				'current' => $current,
+			);
+		}
+
+		return array(
+			'status'  => 'no_change',
+			'reason'  => '',
+			'message' => '',
+			'current' => $current,
+		);
+	}
+
+	/**
+	 * Whether two price values are equal once normalized.
+	 *
+	 * @param mixed $a First value.
+	 * @param mixed $b Second value.
+	 * @return bool
+	 */
+	private function price_equals( $a, $b ) {
+		return wc_format_decimal( (string) $a, false, true ) === wc_format_decimal( (string) $b, false, true );
+	}
+
+	/**
+	 * Finalize a diffed run: total the counts and move it to previewed.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return void
+	 */
+	private function finalize_preview( $run_id ) {
+		$counts = $this->count_rows( $run_id );
+
+		$this->set_status(
+			$run_id,
+			'previewed',
+			array(
+				'rows_planned' => $counts['planned'],
+				'rows_skipped' => $counts['skipped'],
+				'rows_failed'  => $counts['failed'],
+			)
+		);
+
+		wss_log(
+			'Run previewed.',
+			array(
+				'run_id' => (int) $run_id,
+				'counts' => $counts,
+			),
+			'info'
+		);
+	}
+
+	/**
+	 * Count a run's rows grouped into status buckets.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return array Bucket => count.
+	 */
+	public function count_rows( $run_id ) {
+		global $wpdb;
+
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT status, COUNT(*) AS n FROM {$wpdb->prefix}wss_rows WHERE run_id = %d GROUP BY status",
+				$run_id
+			),
+			ARRAY_A
+		);
+
+		$map = array();
+		foreach ( (array) $results as $result ) {
+			$map[ $result['status'] ] = (int) $result['n'];
+		}
+
+		$buckets = array( 'planned', 'no_change', 'skipped', 'failed', 'applied', 'apply_failed', 'rolled_back', 'rollback_failed' );
+		$counts  = array();
+		foreach ( $buckets as $bucket ) {
+			$counts[ $bucket ] = isset( $map[ $bucket ] ) ? $map[ $bucket ] : 0;
+		}
+
+		return $counts;
+	}
+
+	/**
+	 * Update a single row.
+	 *
+	 * @param int   $row_id Row ID.
+	 * @param array $data   Column => value.
+	 * @return void
+	 */
+	private function update_row( $row_id, array $data ) {
+		global $wpdb;
+
+		$data['updated_at'] = current_time( 'mysql', true );
+
+		$formats = array();
+		foreach ( array_keys( $data ) as $column ) {
+			$formats[] = ( 'product_id' === $column ) ? '%d' : '%s';
+		}
+
+		$wpdb->update( $wpdb->prefix . 'wss_rows', $data, array( 'id' => (int) $row_id ), $formats, array( '%d' ) );
 	}
 
 	/**
