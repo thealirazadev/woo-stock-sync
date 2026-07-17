@@ -135,6 +135,20 @@ $wss_has_secret = ( '' !== $settings['auth_header_value'] );
 					<p class="description"><?php esc_html_e( 'How often to fetch the remote feed automatically. Scheduled runs stop at the preview unless auto-apply is enabled.', 'woo-stock-sync' ); ?></p>
 				</td>
 			</tr>
+			<tr>
+				<th scope="row"><label for="wss-scheduled-mode"><?php esc_html_e( 'Scheduled runs', 'woo-stock-sync' ); ?></label></th>
+				<td>
+					<select name="scheduled_mode" id="wss-scheduled-mode">
+						<option value="preview_only" <?php selected( 'preview_only', $settings['scheduled_mode'] ); ?>>
+							<?php esc_html_e( 'Stop at preview (review before applying)', 'woo-stock-sync' ); ?>
+						</option>
+						<option value="auto_apply" <?php selected( 'auto_apply', $settings['scheduled_mode'] ); ?>>
+							<?php esc_html_e( 'Apply automatically', 'woo-stock-sync' ); ?>
+						</option>
+					</select>
+					<p class="description"><?php esc_html_e( 'Auto-apply writes changes without review. Use with care.', 'woo-stock-sync' ); ?></p>
+				</td>
+			</tr>
 		</tbody>
 	</table>
 

@@ -195,6 +195,10 @@ class WSS_Settings {
 			? $raw_post['schedule']
 			: 'manual';
 
+		$clean['scheduled_mode'] = ( isset( $raw_post['scheduled_mode'] ) && 'auto_apply' === $raw_post['scheduled_mode'] )
+			? 'auto_apply'
+			: 'preview_only';
+
 		$mapping = array(
 			'sku'           => '',
 			'stock'         => '',

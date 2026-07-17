@@ -667,6 +667,15 @@ class WSS_Runner {
 		// A previewed run awaiting review must not hold the lock.
 		$this->release_lock( $run_id );
 
+		// Scheduled runs may auto-apply when the owner has opted in.
+		$run = wss_get_run( $run_id );
+		if ( $run && 'schedule' === $run->trigger_type ) {
+			$settings = wss_get_settings();
+			if ( 'auto_apply' === $settings['scheduled_mode'] ) {
+				as_enqueue_async_action( 'wss_apply_batch', array( $run_id ), 'woo-stock-sync' );
+			}
+		}
+
 		wss_log(
 			'Run previewed.',
 			array(
