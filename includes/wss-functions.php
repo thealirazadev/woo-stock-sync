@@ -124,3 +124,80 @@ function wss_format_source( $run ) {
 
 	return '' !== $run->source_ref ? basename( $run->source_ref ) : '';
 }
+
+/**
+ * The visual family (color group) for a run or row status.
+ *
+ * @param string $status Status value.
+ * @return string One of: success, neutral, attention, error.
+ */
+function wss_status_family( $status ) {
+	$map = array(
+		'planned'         => 'success',
+		'applied'         => 'success',
+		'rolled_back'     => 'success',
+		'no_change'       => 'neutral',
+		'skipped'         => 'neutral',
+		'cancelled'       => 'neutral',
+		'pending'         => 'neutral',
+		'staged'          => 'neutral',
+		'locked'          => 'attention',
+		'stalled'         => 'attention',
+		'previewed'       => 'attention',
+		'fetching'        => 'attention',
+		'diffing'         => 'attention',
+		'applying'        => 'attention',
+		'rolling_back'    => 'attention',
+		'failed'          => 'error',
+		'apply_failed'    => 'error',
+		'rollback_failed' => 'error',
+	);
+
+	return isset( $map[ $status ] ) ? $map[ $status ] : 'neutral';
+}
+
+/**
+ * A human-readable label for a run or row status.
+ *
+ * @param string $status Status value.
+ * @return string
+ */
+function wss_status_label( $status ) {
+	$labels = array(
+		'pending'         => __( 'Pending', 'woo-stock-sync' ),
+		'fetching'        => __( 'Fetching', 'woo-stock-sync' ),
+		'diffing'         => __( 'Diffing', 'woo-stock-sync' ),
+		'previewed'       => __( 'Previewed', 'woo-stock-sync' ),
+		'applying'        => __( 'Applying', 'woo-stock-sync' ),
+		'applied'         => __( 'Applied', 'woo-stock-sync' ),
+		'rolling_back'    => __( 'Rolling back', 'woo-stock-sync' ),
+		'rolled_back'     => __( 'Rolled back', 'woo-stock-sync' ),
+		'cancelled'       => __( 'Cancelled', 'woo-stock-sync' ),
+		'failed'          => __( 'Failed', 'woo-stock-sync' ),
+		'staged'          => __( 'Staged', 'woo-stock-sync' ),
+		'planned'         => __( 'Planned', 'woo-stock-sync' ),
+		'no_change'       => __( 'No change', 'woo-stock-sync' ),
+		'skipped'         => __( 'Skipped', 'woo-stock-sync' ),
+		'apply_failed'    => __( 'Apply failed', 'woo-stock-sync' ),
+		'rolled_back_row' => __( 'Rolled back', 'woo-stock-sync' ),
+		'rollback_failed' => __( 'Rollback failed', 'woo-stock-sync' ),
+		'locked'          => __( 'Locked', 'woo-stock-sync' ),
+		'stalled'         => __( 'Stalled', 'woo-stock-sync' ),
+	);
+
+	return isset( $labels[ $status ] ) ? $labels[ $status ] : ucfirst( str_replace( '_', ' ', $status ) );
+}
+
+/**
+ * A status badge (escaped, self-contained HTML) for admin tables.
+ *
+ * @param string $status Status value.
+ * @return string
+ */
+function wss_status_badge( $status ) {
+	return sprintf(
+		'<span class="wss-badge wss-badge-%s">%s</span>',
+		esc_attr( wss_status_family( $status ) ),
+		esc_html( wss_status_label( $status ) )
+	);
+}
