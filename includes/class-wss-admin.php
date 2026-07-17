@@ -48,6 +48,7 @@ class WSS_Admin {
 		add_action( 'admin_post_wss_start_fetch', array( $this, 'handle_start_fetch' ) );
 		add_action( 'admin_post_wss_apply_run', array( $this, 'handle_apply_run' ) );
 		add_action( 'admin_post_wss_rollback_run', array( $this, 'handle_rollback_run' ) );
+		add_action( 'admin_post_wss_release_lock', array( $this, 'handle_release_lock' ) );
 
 		add_action( 'woocommerce_product_options_inventory_product_data', array( $this, 'render_product_lock_field' ) );
 		add_action( 'woocommerce_process_product_meta', array( $this, 'save_product_lock' ) );
@@ -328,6 +329,26 @@ class WSS_Admin {
 	}
 
 	/**
+	 * Admin-post: release a stale sync lock.
+	 *
+	 * @return void
+	 */
+	public function handle_release_lock() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'woo-stock-sync' ) );
+		}
+
+		check_admin_referer( 'wss_release_lock', 'wss_release_lock_nonce' );
+
+		if ( ! $this->runner->lock_is_stale() ) {
+			$this->redirect_notice( 'no_lock', 'error' );
+		}
+
+		$this->runner->force_release_lock();
+		$this->redirect_notice( 'lock_released', 'success' );
+	}
+
+	/**
 	 * Redirect to a plugin screen with a notice.
 	 *
 	 * @param string $key  Notice key.
@@ -465,6 +486,7 @@ class WSS_Admin {
 
 		$is_stalled        = $this->runner->is_stalled( $run );
 		$is_latest_applied = ( 'applied' === $run->status && $this->runner->latest_applied_run_id() === (int) $run_id );
+		$can_release_lock  = ( $this->runner->get_lock_holder() === (int) $run_id && $this->runner->lock_is_stale() );
 
 		require WSS_PATH . 'templates/admin/run-detail.php';
 	}

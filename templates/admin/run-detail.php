@@ -18,6 +18,7 @@ defined( 'ABSPATH' ) || exit;
  * @var string         $status_filter
  * @var bool           $is_stalled
  * @var bool           $is_latest_applied
+ * @var bool           $can_release_lock
  */
 
 $wss_total     = (int) $run->rows_total;
@@ -154,6 +155,16 @@ $wss_in_prog   = in_array( $run->status, array( 'pending', 'fetching', 'diffing'
 	<?php elseif ( $wss_in_prog ) : ?>
 		<p class="wss-progress-note" role="status">
 			<?php esc_html_e( 'This run is still processing. Reload the page to see the latest results.', 'woo-stock-sync' ); ?>
+		</p>
+	<?php endif; ?>
+
+	<?php if ( ! empty( $can_release_lock ) ) : ?>
+		<p class="wss-actions">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wss-inline-form" data-wss-confirm="<?php echo esc_attr__( 'Release the stale sync lock? Only do this if the sync is truly no longer running.', 'woo-stock-sync' ); ?>">
+				<input type="hidden" name="action" value="wss_release_lock" />
+				<?php wp_nonce_field( 'wss_release_lock', 'wss_release_lock_nonce' ); ?>
+				<button type="submit" class="button"><?php esc_html_e( 'Release lock', 'woo-stock-sync' ); ?></button>
+			</form>
 		</p>
 	<?php endif; ?>
 
