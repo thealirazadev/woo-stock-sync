@@ -72,10 +72,31 @@ if ( ! function_exists( 'esc_html__' ) ) {
 		return $text;
 	}
 }
+if ( ! isset( $GLOBALS['wss_stub_filters'] ) ) {
+	$GLOBALS['wss_stub_filters'] = array();
+}
+if ( ! function_exists( 'add_filter' ) ) {
+	function add_filter( $tag, $callback, $priority = 10, $accepted_args = 1 ) {
+		unset( $priority, $accepted_args );
+		$GLOBALS['wss_stub_filters'][ $tag ][] = $callback;
+		return true;
+	}
+}
+if ( ! function_exists( 'remove_all_filters' ) ) {
+	function remove_all_filters( $tag ) {
+		$GLOBALS['wss_stub_filters'][ $tag ] = array();
+		return true;
+	}
+}
 if ( ! function_exists( 'apply_filters' ) ) {
 	function apply_filters( $tag, $value ) {
-		unset( $tag );
-		return $value;
+		$args = array_slice( func_get_args(), 1 );
+		if ( ! empty( $GLOBALS['wss_stub_filters'][ $tag ] ) ) {
+			foreach ( $GLOBALS['wss_stub_filters'][ $tag ] as $callback ) {
+				$args[0] = call_user_func_array( $callback, $args );
+			}
+		}
+		return $args[0];
 	}
 }
 if ( ! function_exists( 'number_format_i18n' ) ) {
