@@ -274,4 +274,115 @@ class WSS_Feed {
 
 		return array_values( array_unique( $columns ) );
 	}
+
+	/**
+	 * Map a raw feed row (cells keyed by column name) to product-field values, and validate it.
+	 *
+	 * Never throws or aborts: an invalid row is returned with a 'failed' status and a reason so the
+	 * caller can record it and continue.
+	 *
+	 * @param int   $row_num  1-based feed row position.
+	 * @param array $assoc    Row cells keyed by column name.
+	 * @param array $mapping  Column mapping.
+	 * @param array $settings Plugin settings (for blank-clears-sale).
+	 * @param array $seen     By-reference set of SKUs already seen in this feed.
+	 * @return array {
+	 *     @type int    $row_num
+	 *     @type string $sku
+	 *     @type array  $new_values Field => value for fields in play.
+	 *     @type string $status     'staged' or 'failed'.
+	 *     @type string $reason     Reason enum when failed, else ''.
+	 *     @type string $message    Human-readable detail.
+	 * }
+	 */
+	public function map_and_validate_row( $row_num, array $assoc, array $mapping, array $settings, array &$seen ) {
+		$sku = isset( $assoc[ $mapping['sku'] ] ) ? trim( (string) $assoc[ $mapping['sku'] ] ) : '';
+
+		$row = array(
+			'row_num'    => (int) $row_num,
+			'sku'        => $sku,
+			'new_values' => array(),
+			'status'     => 'staged',
+			'reason'     => '',
+			'message'    => '',
+		);
+
+		if ( '' === $sku ) {
+			return self::fail_row( $row, 'missing_sku', __( 'The SKU cell is empty.', 'woo-stock-sync' ) );
+		}
+
+		if ( isset( $seen[ $sku ] ) ) {
+			return self::fail_row( $row, 'duplicate_sku', __( 'This SKU already appeared earlier in the feed; the first row wins.', 'woo-stock-sync' ) );
+		}
+		$seen[ $sku ] = true;
+
+		$new = array();
+		foreach ( array( 'stock', 'regular_price', 'sale_price' ) as $field ) {
+			$column = $mapping[ $field ];
+			if ( '' === $column ) {
+				continue;
+			}
+
+			$cell = isset( $assoc[ $column ] ) ? trim( (string) $assoc[ $column ] ) : '';
+
+			if ( 'sale_price' === $field && '' === $cell ) {
+				if ( ! empty( $settings['blank_clears_sale'] ) ) {
+					$new['sale_price'] = '';
+				}
+				continue;
+			}
+
+			if ( '' === $cell ) {
+				continue; // A blank cell means "no change" for this field.
+			}
+
+			if ( ! self::is_nonnegative_number( $cell ) ) {
+				return self::fail_row(
+					$row,
+					'invalid_number',
+					sprintf(
+						/* translators: 1: field name, 2: offending value. */
+						__( 'The %1$s value "%2$s" is not a valid non-negative number.', 'woo-stock-sync' ),
+						$field,
+						$cell
+					)
+				);
+			}
+
+			$new[ $field ] = $cell;
+		}
+
+		if ( isset( $new['regular_price'], $new['sale_price'] ) && '' !== $new['sale_price']
+			&& (float) $new['sale_price'] >= (float) $new['regular_price'] ) {
+			return self::fail_row( $row, 'invalid_sale_price', __( 'The sale price must be lower than the regular price.', 'woo-stock-sync' ) );
+		}
+
+		$row['new_values'] = $new;
+		return $row;
+	}
+
+	/**
+	 * Mark a row result failed with a reason and message.
+	 *
+	 * @param array  $row     Row result.
+	 * @param string $reason  Reason enum.
+	 * @param string $message Detail.
+	 * @return array
+	 */
+	private static function fail_row( array $row, $reason, $message ) {
+		$row['status']  = 'failed';
+		$row['reason']  = $reason;
+		$row['message'] = $message;
+		return $row;
+	}
+
+	/**
+	 * Whether a value is a numeric, non-negative quantity.
+	 *
+	 * @param string $value Raw cell value.
+	 * @return bool
+	 */
+	private static function is_nonnegative_number( $value ) {
+		return is_numeric( $value ) && (float) $value >= 0;
+	}
 }
