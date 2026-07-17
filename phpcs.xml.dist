@@ -60,4 +60,17 @@
 	<rule ref="WordPress.DB.DirectDatabaseQuery">
 		<exclude-pattern>/tests/*</exclude-pattern>
 	</rule>
+
+	<!--
+		The plugin owns dedicated custom tables (runs, rows, snapshots); direct $wpdb access to
+		them is the documented design (see docs/architecture.md). Prepared-SQL sniffs stay fully
+		enforced; the direct-query and object-cache notices do not apply to a purpose-built,
+		frequently-mutated audit log.
+	-->
+	<rule ref="WordPress.DB.DirectDatabaseQuery.DirectQuery">
+		<exclude-pattern>/includes/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.DB.DirectDatabaseQuery.NoCaching">
+		<exclude-pattern>/includes/*</exclude-pattern>
+	</rule>
 </ruleset>
