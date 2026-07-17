@@ -17,6 +17,7 @@ defined( 'ABSPATH' ) || exit;
  * @var WSS_Rows_Table $table
  * @var string         $status_filter
  * @var bool           $is_stalled
+ * @var bool           $is_latest_applied
  */
 
 $wss_total     = (int) $run->rows_total;
@@ -123,6 +124,17 @@ $wss_in_prog   = in_array( $run->status, array( 'pending', 'fetching', 'diffing'
 				<input type="hidden" name="run_id" value="<?php echo esc_attr( $run->id ); ?>" />
 				<?php wp_nonce_field( 'wss_apply_run', 'wss_apply_run_nonce' ); ?>
 				<button type="submit" class="button button-primary"><?php esc_html_e( 'Apply sync', 'woo-stock-sync' ); ?></button>
+			</form>
+		</p>
+	<?php endif; ?>
+
+	<?php if ( ! empty( $is_latest_applied ) ) : ?>
+		<p class="wss-actions">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wss-inline-form" data-wss-confirm="<?php echo esc_attr__( 'Roll back this sync? This restores the stock and prices captured before the sync and overwrites any manual edits made since.', 'woo-stock-sync' ); ?>">
+				<input type="hidden" name="action" value="wss_rollback_run" />
+				<input type="hidden" name="run_id" value="<?php echo esc_attr( $run->id ); ?>" />
+				<?php wp_nonce_field( 'wss_rollback_run', 'wss_rollback_run_nonce' ); ?>
+				<button type="submit" class="button"><?php esc_html_e( 'Roll back sync', 'woo-stock-sync' ); ?></button>
 			</form>
 		</p>
 	<?php endif; ?>

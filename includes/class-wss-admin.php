@@ -47,6 +47,7 @@ class WSS_Admin {
 		add_action( 'wp_ajax_wss_feed_columns', array( $this, 'ajax_feed_columns' ) );
 		add_action( 'admin_post_wss_start_fetch', array( $this, 'handle_start_fetch' ) );
 		add_action( 'admin_post_wss_apply_run', array( $this, 'handle_apply_run' ) );
+		add_action( 'admin_post_wss_rollback_run', array( $this, 'handle_rollback_run' ) );
 
 		add_action( 'woocommerce_product_options_inventory_product_data', array( $this, 'render_product_lock_field' ) );
 		add_action( 'woocommerce_process_product_meta', array( $this, 'save_product_lock' ) );
@@ -291,6 +292,42 @@ class WSS_Admin {
 	}
 
 	/**
+	 * Admin-post: roll back the most recent applied run.
+	 *
+	 * @return void
+	 */
+	public function handle_rollback_run() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'woo-stock-sync' ) );
+		}
+
+		check_admin_referer( 'wss_rollback_run', 'wss_rollback_run_nonce' );
+
+		$run_id = isset( $_POST['run_id'] ) ? absint( wp_unslash( $_POST['run_id'] ) ) : 0;
+		$run    = wss_get_run( $run_id );
+
+		if ( ! $run ) {
+			$this->redirect_notice( 'invalid_run', 'error' );
+		}
+
+		if ( 'applied' !== $run->status ) {
+			$this->redirect_notice( 'invalid_run_state', 'error', array( 'run' => $run_id ) );
+		}
+
+		if ( $this->runner->latest_applied_run_id() !== (int) $run_id ) {
+			$this->redirect_notice( 'not_latest_applied', 'error', array( 'run' => $run_id ) );
+		}
+
+		$holder = $this->runner->get_lock_holder();
+		if ( $holder && $holder !== (int) $run_id ) {
+			$this->redirect_notice( 'lock_held', 'error', array( 'run' => $run_id ) );
+		}
+
+		as_enqueue_async_action( 'wss_rollback_batch', array( $run_id ), 'woo-stock-sync' );
+		$this->redirect_notice( 'rollback_started', 'success', array( 'run' => $run_id ) );
+	}
+
+	/**
 	 * Redirect to a plugin screen with a notice.
 	 *
 	 * @param string $key  Notice key.
@@ -426,7 +463,8 @@ class WSS_Admin {
 		$table = new WSS_Rows_Table( $run_id, $status_filter );
 		$table->prepare_items();
 
-		$is_stalled = $this->runner->is_stalled( $run );
+		$is_stalled        = $this->runner->is_stalled( $run );
+		$is_latest_applied = ( 'applied' === $run->status && $this->runner->latest_applied_run_id() === (int) $run_id );
 
 		require WSS_PATH . 'templates/admin/run-detail.php';
 	}
@@ -482,14 +520,19 @@ class WSS_Admin {
 	 */
 	private static function notice_messages() {
 		return array(
-			'settings_saved'    => __( 'Settings saved.', 'woo-stock-sync' ),
-			'invalid_settings'  => __( 'Configure the feed source and column mapping in Settings first.', 'woo-stock-sync' ),
-			'run_started'       => __( 'Sync started. The preview will appear here shortly.', 'woo-stock-sync' ),
-			'lock_held'         => __( 'A sync is already running. Wait for it to finish before starting another.', 'woo-stock-sync' ),
-			'db_error'          => __( 'The sync could not be started. Please try again.', 'woo-stock-sync' ),
-			'apply_started'     => __( 'Applying the sync in the background. Progress appears below.', 'woo-stock-sync' ),
-			'invalid_run'       => __( 'That sync run could not be found.', 'woo-stock-sync' ),
-			'invalid_run_state' => __( 'That action is not available for this run in its current state.', 'woo-stock-sync' ),
+			'settings_saved'      => __( 'Settings saved.', 'woo-stock-sync' ),
+			'invalid_settings'    => __( 'Configure the feed source and column mapping in Settings first.', 'woo-stock-sync' ),
+			'run_started'         => __( 'Sync started. The preview will appear here shortly.', 'woo-stock-sync' ),
+			'lock_held'           => __( 'A sync is already running. Wait for it to finish before starting another.', 'woo-stock-sync' ),
+			'db_error'            => __( 'The sync could not be started. Please try again.', 'woo-stock-sync' ),
+			'apply_started'       => __( 'Applying the sync in the background. Progress appears below.', 'woo-stock-sync' ),
+			'invalid_run'         => __( 'That sync run could not be found.', 'woo-stock-sync' ),
+			'invalid_run_state'   => __( 'That action is not available for this run in its current state.', 'woo-stock-sync' ),
+			'rollback_started'    => __( 'Rolling back the sync in the background. Progress appears below.', 'woo-stock-sync' ),
+			'not_latest_applied'  => __( 'Only the most recent applied run can be rolled back.', 'woo-stock-sync' ),
+			'nothing_to_rollback' => __( 'There is no applied run to roll back.', 'woo-stock-sync' ),
+			'lock_released'       => __( 'The stale sync lock was released.', 'woo-stock-sync' ),
+			'no_lock'             => __( 'There is no stale lock to release.', 'woo-stock-sync' ),
 		);
 	}
 }
