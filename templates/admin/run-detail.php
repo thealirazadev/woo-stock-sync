@@ -153,9 +153,16 @@ $wss_in_prog   = in_array( $run->status, array( 'pending', 'fetching', 'diffing'
 			</form>
 		</p>
 	<?php elseif ( $wss_in_prog ) : ?>
-		<p class="wss-progress-note" role="status">
-			<?php esc_html_e( 'This run is still processing. Reload the page to see the latest results.', 'woo-stock-sync' ); ?>
-		</p>
+		<div class="wss-progress" data-run-id="<?php echo esc_attr( $run->id ); ?>" data-status="<?php echo esc_attr( $run->status ); ?>" role="status" aria-live="polite">
+			<div class="wss-progress-bar" aria-hidden="true"><span class="wss-progress-fill"></span></div>
+			<p class="wss-progress-text">
+				<span class="wss-progress-processed">0</span>
+				<?php esc_html_e( 'of', 'woo-stock-sync' ); ?>
+				<span class="wss-progress-total"><?php echo absint( $run->rows_total ); ?></span>
+				<?php esc_html_e( 'rows', 'woo-stock-sync' ); ?>
+				(<span class="wss-progress-percent">0%</span>)
+			</p>
+		</div>
 	<?php endif; ?>
 
 	<?php if ( ! empty( $can_release_lock ) ) : ?>

@@ -16,6 +16,66 @@
 		return ( cfg.i18n && cfg.i18n[ key ] ) || '';
 	}
 
+	function pollProgress( region ) {
+		var runId = region.getAttribute( 'data-run-id' );
+		var terminal = [ 'previewed', 'applied', 'rolled_back', 'cancelled', 'failed' ];
+		var fill = region.querySelector( '.wss-progress-fill' );
+		var processedEl = region.querySelector( '.wss-progress-processed' );
+		var totalEl = region.querySelector( '.wss-progress-total' );
+		var percentEl = region.querySelector( '.wss-progress-percent' );
+		var timer = null;
+
+		function tick() {
+			var params = new URLSearchParams();
+			params.append( 'action', 'wss_run_progress' );
+			params.append( 'nonce', cfg.progressNonce || '' );
+			params.append( 'run_id', runId );
+
+			fetch( cfg.ajaxUrl, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: params.toString()
+			} )
+				.then( function ( response ) {
+					return response.json();
+				} )
+				.then( function ( res ) {
+					if ( ! res || ! res.success || ! res.data ) {
+						return;
+					}
+					var data = res.data;
+					var total = data.rows_total || 0;
+					var processed = data.rows_processed || 0;
+					var pct = total > 0 ? Math.min( 100, Math.round( ( processed / total ) * 100 ) ) : 0;
+
+					if ( processedEl ) {
+						processedEl.textContent = processed;
+					}
+					if ( totalEl ) {
+						totalEl.textContent = total;
+					}
+					if ( percentEl ) {
+						percentEl.textContent = pct + '%';
+					}
+					if ( fill ) {
+						fill.style.width = pct + '%';
+					}
+
+					if ( terminal.indexOf( data.status ) !== -1 ) {
+						if ( timer ) {
+							clearInterval( timer );
+						}
+						window.location.reload();
+					}
+				} )
+				.catch( function () {} );
+		}
+
+		tick();
+		timer = setInterval( tick, cfg.pollInterval || 4000 );
+	}
+
 	ready( function () {
 		// Confirmation dialogs for destructive-ish actions (apply, roll back, release lock).
 		var confirmForms = document.querySelectorAll( 'form[data-wss-confirm]' );
@@ -33,6 +93,12 @@
 				}
 			} );
 		} );
+
+		// Live progress polling on the run detail screen.
+		var progress = document.querySelector( '.wss-progress[data-run-id]' );
+		if ( progress ) {
+			pollProgress( progress );
+		}
 
 		var btn = document.getElementById( 'wss-load-columns' );
 		if ( ! btn ) {

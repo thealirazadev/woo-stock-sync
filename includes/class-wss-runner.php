@@ -1139,6 +1139,41 @@ class WSS_Runner {
 	}
 
 	/**
+	 * How many rows have reached a terminal status for the run's current stage.
+	 *
+	 * @param object $run Run row.
+	 * @return int
+	 */
+	public function count_processed( $run ) {
+		global $wpdb;
+
+		$run_id = (int) $run->id;
+
+		switch ( $run->status ) {
+			case 'fetching':
+				return (int) $wpdb->get_var(
+					$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}wss_rows WHERE run_id = %d", $run_id )
+				);
+			case 'diffing':
+				$pending = (int) $wpdb->get_var(
+					$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}wss_rows WHERE run_id = %d AND status = 'staged'", $run_id )
+				);
+				return max( 0, (int) $run->rows_total - $pending );
+			case 'applying':
+				$pending = (int) $wpdb->get_var(
+					$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}wss_rows WHERE run_id = %d AND status = 'planned'", $run_id )
+				);
+				return max( 0, (int) $run->rows_total - $pending );
+			case 'rolling_back':
+				return (int) $wpdb->get_var(
+					$wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}wss_snapshots WHERE run_id = %d AND restored = 1", $run_id )
+				);
+			default:
+				return (int) $run->rows_total;
+		}
+	}
+
+	/**
 	 * Update a single row.
 	 *
 	 * @param int   $row_id Row ID.

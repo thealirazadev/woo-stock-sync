@@ -45,6 +45,7 @@ class WSS_Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_notices', array( $this, 'render_notices' ) );
 		add_action( 'wp_ajax_wss_feed_columns', array( $this, 'ajax_feed_columns' ) );
+		add_action( 'wp_ajax_wss_run_progress', array( $this, 'ajax_run_progress' ) );
 		add_action( 'admin_post_wss_start_fetch', array( $this, 'handle_start_fetch' ) );
 		add_action( 'admin_post_wss_apply_run', array( $this, 'handle_apply_run' ) );
 		add_action( 'admin_post_wss_rollback_run', array( $this, 'handle_rollback_run' ) );
@@ -168,9 +169,11 @@ class WSS_Admin {
 			'wss-admin',
 			'wssAdmin',
 			array(
-				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
-				'columnsNonce' => wp_create_nonce( 'wss_feed_columns' ),
-				'i18n'         => array(
+				'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+				'columnsNonce'  => wp_create_nonce( 'wss_feed_columns' ),
+				'progressNonce' => wp_create_nonce( 'wss_run_progress' ),
+				'pollInterval'  => 4000,
+				'i18n'          => array(
 					'loading' => __( 'Loading columns…', 'woo-stock-sync' ),
 					'loaded'  => __( 'Columns loaded.', 'woo-stock-sync' ),
 					'error'   => __( 'Could not load columns. Check the feed source in Settings.', 'woo-stock-sync' ),
@@ -226,6 +229,51 @@ class WSS_Admin {
 		}
 
 		wp_send_json_success( array( 'columns' => array_values( $columns ) ) );
+	}
+
+	/**
+	 * Ajax: return a run's live progress for the run screen poller.
+	 *
+	 * @return void
+	 */
+	public function ajax_run_progress() {
+		check_ajax_referer( 'wss_run_progress', 'nonce' );
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'forbidden',
+					'message' => __( 'You do not have permission to do this.', 'woo-stock-sync' ),
+				),
+				403
+			);
+		}
+
+		$run_id = isset( $_POST['run_id'] ) ? absint( wp_unslash( $_POST['run_id'] ) ) : 0;
+		$run    = wss_get_run( $run_id );
+
+		if ( ! $run ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'invalid_run',
+					'message' => __( 'That sync run could not be found.', 'woo-stock-sync' ),
+				)
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'run_id'         => (int) $run->id,
+				'status'         => $run->status,
+				'rows_total'     => (int) $run->rows_total,
+				'rows_processed' => $this->runner->count_processed( $run ),
+				'rows_planned'   => (int) $run->rows_planned,
+				'rows_skipped'   => (int) $run->rows_skipped,
+				'rows_failed'    => (int) $run->rows_failed,
+				'rows_applied'   => (int) $run->rows_applied,
+				'stalled'        => $this->runner->is_stalled( $run ),
+			)
+		);
 	}
 
 	/**
