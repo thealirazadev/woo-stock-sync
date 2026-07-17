@@ -42,14 +42,61 @@ require_once WSS_PATH . 'includes/class-wss-settings.php';
 require_once WSS_PATH . 'includes/class-wss-admin.php';
 require_once WSS_PATH . 'includes/class-wss-plugin.php';
 
-register_activation_hook( __FILE__, array( 'WSS_Install', 'activate' ) );
+/**
+ * Whether WooCommerce is active and loaded in the current request.
+ *
+ * @return bool
+ */
+function wss_woocommerce_active() {
+	return class_exists( 'WooCommerce' );
+}
 
 /**
- * Boot the plugin once all plugins are loaded.
+ * Activation callback. Refuses to activate without WooCommerce, then installs the schema.
+ *
+ * @return void
+ */
+function wss_activate() {
+	if ( ! wss_woocommerce_active() ) {
+		deactivate_plugins( plugin_basename( __FILE__ ) );
+		wp_die(
+			esc_html__( 'Woo Stock Sync requires WooCommerce to be installed and active. Please activate WooCommerce first.', 'woo-stock-sync' ),
+			'',
+			array( 'back_link' => true )
+		);
+	}
+
+	WSS_Install::activate();
+}
+register_activation_hook( __FILE__, 'wss_activate' );
+
+/**
+ * Render the admin notice shown when WooCommerce is missing.
+ *
+ * @return void
+ */
+function wss_woocommerce_missing_notice() {
+	if ( ! current_user_can( 'activate_plugins' ) ) {
+		return;
+	}
+
+	printf(
+		'<div class="notice notice-error"><p>%s</p></div>',
+		esc_html__( 'Woo Stock Sync requires WooCommerce to be installed and active. The plugin is inactive until WooCommerce is enabled.', 'woo-stock-sync' )
+	);
+}
+
+/**
+ * Boot the plugin once all plugins are loaded, provided WooCommerce is present.
  *
  * @return void
  */
 function wss_bootstrap() {
+	if ( ! wss_woocommerce_active() ) {
+		add_action( 'admin_notices', 'wss_woocommerce_missing_notice' );
+		return;
+	}
+
 	load_plugin_textdomain( 'woo-stock-sync', false, dirname( WSS_BASENAME ) . '/languages' );
 
 	WSS_Plugin::instance();
