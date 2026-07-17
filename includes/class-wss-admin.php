@@ -47,6 +47,89 @@ class WSS_Admin {
 		add_action( 'wp_ajax_wss_feed_columns', array( $this, 'ajax_feed_columns' ) );
 		add_action( 'admin_post_wss_start_fetch', array( $this, 'handle_start_fetch' ) );
 		add_action( 'admin_post_wss_apply_run', array( $this, 'handle_apply_run' ) );
+
+		add_action( 'woocommerce_product_options_inventory_product_data', array( $this, 'render_product_lock_field' ) );
+		add_action( 'woocommerce_process_product_meta', array( $this, 'save_product_lock' ) );
+		add_action( 'woocommerce_variation_options', array( $this, 'render_variation_lock_field' ), 10, 3 );
+		add_action( 'woocommerce_save_product_variation', array( $this, 'save_variation_lock' ), 10, 2 );
+	}
+
+	/**
+	 * Render the "Lock from stock sync" checkbox in the product inventory panel.
+	 *
+	 * @return void
+	 */
+	public function render_product_lock_field() {
+		global $post;
+
+		woocommerce_wp_checkbox(
+			array(
+				'id'          => '_wss_locked',
+				'label'       => __( 'Lock from stock sync', 'woo-stock-sync' ),
+				'description' => __( "Syncs will never change this product's stock or prices.", 'woo-stock-sync' ),
+				'value'       => get_post_meta( $post->ID, '_wss_locked', true ),
+			)
+		);
+	}
+
+	/**
+	 * Save the product-level lock flag.
+	 *
+	 * @param int $post_id Product ID.
+	 * @return void
+	 */
+	public function save_product_lock( $post_id ) {
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+
+		// WooCommerce verifies its own product nonce before this fires; re-check for defense in depth.
+		if ( ! isset( $_POST['woocommerce_meta_nonce'] )
+			|| ! wp_verify_nonce( sanitize_key( wp_unslash( $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ) {
+			return;
+		}
+
+		$locked = empty( $_POST['_wss_locked'] ) ? 'no' : 'yes';
+		update_post_meta( $post_id, '_wss_locked', $locked );
+	}
+
+	/**
+	 * Render the "Lock from stock sync" checkbox for a variation.
+	 *
+	 * @param int     $loop           Variation loop index.
+	 * @param array   $variation_data Variation data.
+	 * @param WP_Post $variation      Variation post.
+	 * @return void
+	 */
+	public function render_variation_lock_field( $loop, $variation_data, $variation ) {
+		unset( $variation_data );
+
+		woocommerce_wp_checkbox(
+			array(
+				'id'            => '_wss_locked_variation' . $loop,
+				'name'          => '_wss_locked_variation[' . $loop . ']',
+				'label'         => __( 'Lock from stock sync', 'woo-stock-sync' ),
+				'value'         => get_post_meta( $variation->ID, '_wss_locked', true ),
+				'wrapper_class' => 'form-row form-row-full',
+			)
+		);
+	}
+
+	/**
+	 * Save a variation's lock flag.
+	 *
+	 * @param int $variation_id Variation ID.
+	 * @param int $loop         Variation loop index.
+	 * @return void
+	 */
+	public function save_variation_lock( $variation_id, $loop ) {
+		if ( ! current_user_can( 'edit_post', $variation_id ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- WooCommerce verifies the save_variations nonce before this fires.
+		$locked = empty( $_POST['_wss_locked_variation'][ $loop ] ) ? 'no' : 'yes';
+		update_post_meta( $variation_id, '_wss_locked', $locked );
 	}
 
 	/**
