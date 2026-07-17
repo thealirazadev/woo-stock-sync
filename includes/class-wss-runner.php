@@ -386,6 +386,24 @@ class WSS_Runner {
 	}
 
 	/**
+	 * Cancel a previewed run so it can no longer be applied.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return bool True if the run was cancelled.
+	 */
+	public function cancel_run( $run_id ) {
+		$run = wss_get_run( $run_id );
+		if ( ! $run || 'previewed' !== $run->status ) {
+			return false;
+		}
+
+		$this->set_status( $run_id, 'cancelled', array( 'finished_at' => current_time( 'mysql', true ) ) );
+		$this->release_lock( $run_id );
+
+		return true;
+	}
+
+	/**
 	 * Background action: fetch the feed and stage its rows.
 	 *
 	 * @param int $run_id Run ID.

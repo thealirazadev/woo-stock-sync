@@ -49,6 +49,7 @@ class WSS_Admin {
 		add_action( 'admin_post_wss_start_fetch', array( $this, 'handle_start_fetch' ) );
 		add_action( 'admin_post_wss_apply_run', array( $this, 'handle_apply_run' ) );
 		add_action( 'admin_post_wss_rollback_run', array( $this, 'handle_rollback_run' ) );
+		add_action( 'admin_post_wss_cancel_run', array( $this, 'handle_cancel_run' ) );
 		add_action( 'admin_post_wss_release_lock', array( $this, 'handle_release_lock' ) );
 
 		add_action( 'woocommerce_product_options_inventory_product_data', array( $this, 'render_product_lock_field' ) );
@@ -377,6 +378,37 @@ class WSS_Admin {
 	}
 
 	/**
+	 * Admin-post: cancel a previewed run.
+	 *
+	 * @return void
+	 */
+	public function handle_cancel_run() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'woo-stock-sync' ) );
+		}
+
+		check_admin_referer( 'wss_cancel_run', 'wss_cancel_run_nonce' );
+
+		$run_id = isset( $_POST['run_id'] ) ? absint( wp_unslash( $_POST['run_id'] ) ) : 0;
+		$run    = wss_get_run( $run_id );
+
+		if ( ! $run ) {
+			$this->redirect_notice( 'invalid_run', 'error' );
+		}
+
+		if ( 'cancelled' === $run->status ) {
+			$this->redirect_notice( 'run_cancelled', 'success', array( 'run' => $run_id ) );
+		}
+
+		if ( 'previewed' !== $run->status ) {
+			$this->redirect_notice( 'invalid_run_state', 'error', array( 'run' => $run_id ) );
+		}
+
+		$this->runner->cancel_run( $run_id );
+		$this->redirect_notice( 'run_cancelled', 'success', array( 'run' => $run_id ) );
+	}
+
+	/**
 	 * Admin-post: release a stale sync lock.
 	 *
 	 * @return void
@@ -603,6 +635,7 @@ class WSS_Admin {
 			'nothing_to_rollback' => __( 'There is no applied run to roll back.', 'woo-stock-sync' ),
 			'lock_released'       => __( 'The stale sync lock was released.', 'woo-stock-sync' ),
 			'no_lock'             => __( 'There is no stale lock to release.', 'woo-stock-sync' ),
+			'run_cancelled'       => __( 'The previewed run was cancelled.', 'woo-stock-sync' ),
 		);
 	}
 }

@@ -126,6 +126,12 @@ $wss_in_prog   = in_array( $run->status, array( 'pending', 'fetching', 'diffing'
 				<?php wp_nonce_field( 'wss_apply_run', 'wss_apply_run_nonce' ); ?>
 				<button type="submit" class="button button-primary"><?php esc_html_e( 'Apply sync', 'woo-stock-sync' ); ?></button>
 			</form>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wss-inline-form">
+				<input type="hidden" name="action" value="wss_cancel_run" />
+				<input type="hidden" name="run_id" value="<?php echo esc_attr( $run->id ); ?>" />
+				<?php wp_nonce_field( 'wss_cancel_run', 'wss_cancel_run_nonce' ); ?>
+				<button type="submit" class="button"><?php esc_html_e( 'Cancel', 'woo-stock-sync' ); ?></button>
+			</form>
 		</p>
 	<?php endif; ?>
 
