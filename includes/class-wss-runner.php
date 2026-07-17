@@ -629,6 +629,8 @@ class WSS_Runner {
 			return;
 		}
 
+		$this->snapshot_product( (int) $row->run_id, $product );
+
 		try {
 			$this->write_values( $product, $new_values );
 			$product->save();
@@ -655,6 +657,46 @@ class WSS_Runner {
 					'status'  => 'apply_failed',
 					'reason'  => 'wc_error',
 					'message' => $error->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Capture a product's prior values once per run, before the first write.
+	 *
+	 * Insert-once via the unique (run_id, product_id) key, so a resumed batch never overwrites the
+	 * true prior value that rollback depends on.
+	 *
+	 * @param int        $run_id  Run ID.
+	 * @param WC_Product $product Product.
+	 * @return void
+	 */
+	private function snapshot_product( $run_id, $product ) {
+		global $wpdb;
+
+		$prior = array(
+			'stock_quantity' => $product->managing_stock() ? $product->get_stock_quantity() : null,
+			'regular_price'  => $product->get_regular_price( 'edit' ),
+			'sale_price'     => $product->get_sale_price( 'edit' ),
+		);
+
+		$result = $wpdb->query(
+			$wpdb->prepare(
+				"INSERT IGNORE INTO {$wpdb->prefix}wss_snapshots (run_id, product_id, prior_values, restored) VALUES (%d, %d, %s, 0)",
+				(int) $run_id,
+				(int) $product->get_id(),
+				wp_json_encode( $prior )
+			)
+		);
+
+		if ( false === $result ) {
+			wss_log(
+				'Failed to write a product snapshot.',
+				array(
+					'run_id'     => (int) $run_id,
+					'product_id' => (int) $product->get_id(),
+					'db_error'   => $wpdb->last_error,
 				)
 			);
 		}
