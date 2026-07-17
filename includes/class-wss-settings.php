@@ -53,7 +53,8 @@ class WSS_Settings {
 			}
 		}
 
-		$errors = $this->errors;
+		$errors  = $this->errors;
+		$columns = $this->known_columns( $settings );
 
 		echo '<div class="wrap wss-wrap">';
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'Stock Sync', 'woo-stock-sync' ) . '</h1>';
@@ -62,6 +63,61 @@ class WSS_Settings {
 		require WSS_PATH . 'templates/admin/settings.php';
 
 		echo '</div>';
+	}
+
+	/**
+	 * Columns available to the mapping selects: the saved mapping plus, for an uploaded file, the
+	 * columns read from it. Remote sources are read on demand via the Load columns button.
+	 *
+	 * @param array $settings Plugin settings.
+	 * @return array Column names.
+	 */
+	private function known_columns( array $settings ) {
+		$known = array();
+		foreach ( $settings['mapping'] as $column ) {
+			if ( '' !== $column ) {
+				$known[] = $column;
+			}
+		}
+
+		if ( 'upload' === $settings['source_type'] && '' !== $settings['upload_path'] ) {
+			$feed    = new WSS_Feed();
+			$columns = $feed->list_columns( $settings );
+			if ( is_array( $columns ) ) {
+				$known = array_merge( $known, $columns );
+			}
+		}
+
+		return array_values( array_unique( $known ) );
+	}
+
+	/**
+	 * Render a mapping <select> for one product field.
+	 *
+	 * @param string $field    Mapping key (sku|stock|regular_price|sale_price).
+	 * @param array  $columns  Available column names.
+	 * @param array  $settings Plugin settings (for the current selection).
+	 * @return void
+	 */
+	public function mapping_select( $field, array $columns, array $settings ) {
+		$current = isset( $settings['mapping'][ $field ] ) ? $settings['mapping'][ $field ] : '';
+
+		$options = $columns;
+		if ( '' !== $current && ! in_array( $current, $options, true ) ) {
+			$options[] = $current;
+		}
+
+		printf( '<select name="map_%1$s" id="wss-map-%1$s" class="wss-map-select" data-map="%1$s">', esc_attr( $field ) );
+		echo '<option value="">' . esc_html__( '&mdash; Not mapped &mdash;', 'woo-stock-sync' ) . '</option>';
+		foreach ( $options as $column ) {
+			printf(
+				'<option value="%s"%s>%s</option>',
+				esc_attr( $column ),
+				selected( $column, $current, false ),
+				esc_html( $column )
+			);
+		}
+		echo '</select>';
 	}
 
 	/**
@@ -132,6 +188,25 @@ class WSS_Settings {
 		} elseif ( is_array( $upload ) ) {
 			$clean['upload_path'] = $upload['path'];
 			$clean['upload_name'] = $upload['name'];
+		}
+
+		$mapping = array(
+			'sku'           => '',
+			'stock'         => '',
+			'regular_price' => '',
+			'sale_price'    => '',
+		);
+		foreach ( array_keys( $mapping ) as $field ) {
+			$mapping[ $field ] = isset( $raw_post[ 'map_' . $field ] ) ? sanitize_text_field( $raw_post[ 'map_' . $field ] ) : '';
+		}
+		$clean['mapping']           = $mapping;
+		$clean['blank_clears_sale'] = ! empty( $raw_post['blank_clears_sale'] );
+
+		if ( '' === $mapping['sku'] ) {
+			$errors['map_sku'] = __( 'Map the SKU column. It is required to match feed rows to products.', 'woo-stock-sync' );
+		}
+		if ( '' === $mapping['stock'] && '' === $mapping['regular_price'] && '' === $mapping['sale_price'] ) {
+			$errors['map_values'] = __( 'Map at least one of stock, regular price, or sale price.', 'woo-stock-sync' );
 		}
 
 		if ( ! empty( $errors ) ) {

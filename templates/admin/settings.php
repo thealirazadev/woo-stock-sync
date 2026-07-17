@@ -111,5 +111,45 @@ $wss_has_secret = ( '' !== $settings['auth_header_value'] );
 		</tbody>
 	</table>
 
+	<h2><?php esc_html_e( 'Column mapping', 'woo-stock-sync' ); ?></h2>
+	<p class="description">
+		<?php esc_html_e( 'Match feed columns to product fields. A blank cell in the feed means "no change" for that field.', 'woo-stock-sync' ); ?>
+		<button type="button" class="button" id="wss-load-columns"><?php esc_html_e( 'Load columns', 'woo-stock-sync' ); ?></button>
+		<span class="spinner wss-load-spinner" aria-hidden="true"></span>
+		<span class="wss-load-status" role="status" aria-live="polite"></span>
+	</p>
+	<table class="form-table" role="presentation">
+		<tbody>
+			<tr>
+				<th scope="row"><label for="wss-map-sku"><?php esc_html_e( 'SKU column (required)', 'woo-stock-sync' ); ?></label></th>
+				<td>
+					<?php $this->mapping_select( 'sku', $columns, $settings ); ?>
+					<?php $this->field_error( 'map_sku' ); ?>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="wss-map-stock"><?php esc_html_e( 'Stock quantity', 'woo-stock-sync' ); ?></label></th>
+				<td><?php $this->mapping_select( 'stock', $columns, $settings ); ?></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="wss-map-regular_price"><?php esc_html_e( 'Regular price', 'woo-stock-sync' ); ?></label></th>
+				<td><?php $this->mapping_select( 'regular_price', $columns, $settings ); ?></td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="wss-map-sale_price"><?php esc_html_e( 'Sale price', 'woo-stock-sync' ); ?></label></th>
+				<td>
+					<?php $this->mapping_select( 'sale_price', $columns, $settings ); ?>
+					<?php $this->field_error( 'map_values' ); ?>
+					<p class="description">
+						<label>
+							<input type="checkbox" name="blank_clears_sale" value="1" <?php checked( ! empty( $settings['blank_clears_sale'] ) ); ?> />
+							<?php esc_html_e( 'Treat a blank sale price cell as "clear the sale price"', 'woo-stock-sync' ); ?>
+						</label>
+					</p>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+
 	<?php submit_button( __( 'Save settings', 'woo-stock-sync' ) ); ?>
 </form>
