@@ -288,12 +288,27 @@ class WSS_Admin {
 	 * @return void
 	 */
 	private function render_run_detail( $run_id ) {
-		echo '<div class="wrap wss-wrap">';
-		printf(
-			'<h1 class="wp-heading-inline">%s</h1>',
-			esc_html( sprintf( /* translators: %d: run ID. */ __( 'Sync Run #%d', 'woo-stock-sync' ), $run_id ) )
-		);
-		echo '</div>';
+		$run = wss_get_run( $run_id );
+
+		if ( ! $run ) {
+			echo '<div class="wrap wss-wrap">';
+			echo '<h1 class="wp-heading-inline">' . esc_html__( 'Sync Run', 'woo-stock-sync' ) . '</h1>';
+			echo '<div class="notice notice-error"><p>' . esc_html__( 'That sync run could not be found.', 'woo-stock-sync' ) . '</p></div>';
+			echo '</div>';
+			return;
+		}
+
+		$allowed       = array( 'planned', 'no_change', 'skipped', 'failed', 'applied' );
+		$status_filter = isset( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter.
+		if ( ! in_array( $status_filter, $allowed, true ) ) {
+			$status_filter = '';
+		}
+
+		require_once WSS_PATH . 'includes/class-wss-rows-table.php';
+		$table = new WSS_Rows_Table( $run_id, $status_filter );
+		$table->prepare_items();
+
+		require WSS_PATH . 'templates/admin/run-detail.php';
 	}
 
 	/**
