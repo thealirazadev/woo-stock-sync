@@ -35,6 +35,7 @@ class WSS_Admin {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_notices', array( $this, 'render_notices' ) );
+		add_action( 'wp_ajax_wss_feed_columns', array( $this, 'ajax_feed_columns' ) );
 	}
 
 	/**
@@ -65,7 +66,70 @@ class WSS_Admin {
 		}
 
 		wp_enqueue_style( 'wss-admin', WSS_URL . 'assets/css/admin.css', array(), WSS_VERSION );
-		wp_enqueue_script( 'wss-admin', WSS_URL . 'assets/js/admin.js', array( 'jquery' ), WSS_VERSION, true );
+		wp_enqueue_script( 'wss-admin', WSS_URL . 'assets/js/admin.js', array(), WSS_VERSION, true );
+
+		wp_localize_script(
+			'wss-admin',
+			'wssAdmin',
+			array(
+				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+				'columnsNonce' => wp_create_nonce( 'wss_feed_columns' ),
+				'i18n'         => array(
+					'loading' => __( 'Loading columns…', 'woo-stock-sync' ),
+					'loaded'  => __( 'Columns loaded.', 'woo-stock-sync' ),
+					'error'   => __( 'Could not load columns. Check the feed source in Settings.', 'woo-stock-sync' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Ajax: return the feed's column names for the current (saved or submitted) source.
+	 *
+	 * @return void
+	 */
+	public function ajax_feed_columns() {
+		check_ajax_referer( 'wss_feed_columns', 'nonce' );
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => 'forbidden',
+					'message' => __( 'You do not have permission to do this.', 'woo-stock-sync' ),
+				),
+				403
+			);
+		}
+
+		$settings = wss_get_settings();
+		$post     = wp_unslash( $_POST ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- each field sanitized individually below.
+
+		if ( isset( $post['source_type'] ) ) {
+			$settings['source_type'] = ( 'url' === $post['source_type'] ) ? 'url' : 'upload';
+		}
+		if ( isset( $post['feed_url'] ) ) {
+			$settings['feed_url'] = esc_url_raw( trim( $post['feed_url'] ) );
+		}
+		if ( isset( $post['auth_header_name'] ) ) {
+			$settings['auth_header_name'] = sanitize_text_field( $post['auth_header_name'] );
+		}
+		if ( isset( $post['auth_header_value'] ) && '' !== trim( $post['auth_header_value'] ) ) {
+			$settings['auth_header_value'] = sanitize_text_field( $post['auth_header_value'] );
+		}
+
+		$feed    = new WSS_Feed();
+		$columns = $feed->list_columns( $settings );
+
+		if ( is_wp_error( $columns ) ) {
+			wp_send_json_error(
+				array(
+					'code'    => $columns->get_error_code(),
+					'message' => $columns->get_error_message(),
+				)
+			);
+		}
+
+		wp_send_json_success( array( 'columns' => array_values( $columns ) ) );
 	}
 
 	/**
