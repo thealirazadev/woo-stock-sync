@@ -92,35 +92,48 @@ class WSS_Feed {
 	 * }
 	 */
 	public function resolve_source( array $settings, $override_url = '' ) {
-		$type = ( '' !== $override_url || 'url' === $settings['source_type'] ) ? 'url' : 'upload';
-
-		if ( 'url' === $type ) {
+		if ( '' !== $override_url || 'url' === $settings['source_type'] ) {
 			$url = ( '' !== $override_url ) ? $override_url : $settings['feed_url'];
-			if ( '' === $url ) {
+			return $this->open_run_source( 'url', $url, $settings );
+		}
+
+		return $this->open_run_source( 'upload', $settings['upload_path'], $settings );
+	}
+
+	/**
+	 * Open an explicit source (a run's stored source_type + source_ref) to a readable local file.
+	 *
+	 * @param string $source_type 'url' or 'upload'.
+	 * @param string $source_ref  URL or absolute file path.
+	 * @param array  $settings    Plugin settings (for the auth header on URL sources).
+	 * @return array|WP_Error Source descriptor (format, path, temp, type), or WP_Error.
+	 */
+	public function open_run_source( $source_type, $source_ref, array $settings ) {
+		if ( 'url' === $source_type ) {
+			if ( '' === $source_ref ) {
 				return new WP_Error( 'invalid_settings', __( 'No feed URL is configured.', 'woo-stock-sync' ) );
 			}
 
-			$path = $this->download_remote( $url, $settings['auth_header_name'], $settings['auth_header_value'] );
+			$path = $this->download_remote( $source_ref, $settings['auth_header_name'], $settings['auth_header_value'] );
 			if ( is_wp_error( $path ) ) {
 				return $path;
 			}
 
 			return array(
-				'format' => self::detect_format( $path, $url ),
+				'format' => self::detect_format( $path, $source_ref ),
 				'path'   => $path,
 				'temp'   => true,
 				'type'   => 'url',
 			);
 		}
 
-		$path = $settings['upload_path'];
-		if ( '' === $path || ! file_exists( $path ) ) {
-			return new WP_Error( 'invalid_settings', __( 'No uploaded feed file was found. Upload a file in Settings.', 'woo-stock-sync' ) );
+		if ( '' === $source_ref || ! file_exists( $source_ref ) ) {
+			return new WP_Error( 'invalid_settings', __( 'The feed file is not available. Upload a feed file in Settings.', 'woo-stock-sync' ) );
 		}
 
 		return array(
-			'format' => self::detect_format( $path ),
-			'path'   => $path,
+			'format' => self::detect_format( $source_ref ),
+			'path'   => $source_ref,
 			'temp'   => false,
 			'type'   => 'upload',
 		);
