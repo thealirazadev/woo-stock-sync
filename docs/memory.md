@@ -10,7 +10,17 @@ in the Decisions log with its reason.
 
 ## In progress
 
-- Phase 3: scheduled sync, live progress, cancel.
+- Phase 4: WP-CLI commands.
+
+## Phase 3 (complete)
+
+- Recurring `wss_scheduled_fetch` registered/rescheduled/removed on settings save (exactly one action
+  via `as_unschedule_all_actions` then `as_schedule_recurring_action`); schedule + scheduled_mode
+  settings; scheduled runs auto-apply when opted in (from `finalize_preview`); scheduled fetch skips
+  (logged) when the lock is held or a prior scheduled run is unfinished; live progress via the
+  `wss_run_progress` ajax poll + progress bar (reduced-motion aware) that reloads on terminal status;
+  cancel a previewed run. Verification: `phpcs` clean; `phpunit` 22 tests (9 integration skip under
+  stubs).
 
 ## Phase 2 (complete)
 
