@@ -45,6 +45,7 @@ class WSS_Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'admin_notices', array( $this, 'render_notices' ) );
 		add_action( 'wp_ajax_wss_feed_columns', array( $this, 'ajax_feed_columns' ) );
+		add_action( 'admin_post_wss_start_fetch', array( $this, 'handle_start_fetch' ) );
 	}
 
 	/**
@@ -142,6 +143,57 @@ class WSS_Admin {
 	}
 
 	/**
+	 * Admin-post: create a run and queue its fetch, then redirect to the new run.
+	 *
+	 * @return void
+	 */
+	public function handle_start_fetch() {
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'woo-stock-sync' ) );
+		}
+
+		check_admin_referer( 'wss_start_fetch', 'wss_start_fetch_nonce' );
+
+		$run_id = $this->runner->begin_run( 'manual', get_current_user_id() );
+
+		if ( is_wp_error( $run_id ) ) {
+			$this->redirect_notice( $run_id->get_error_code(), 'error' );
+		}
+
+		wp_safe_redirect(
+			self::page_url(
+				array(
+					'run'             => (int) $run_id,
+					'wss_notice'      => 'run_started',
+					'wss_notice_type' => 'success',
+				)
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Redirect to a plugin screen with a notice.
+	 *
+	 * @param string $key  Notice key.
+	 * @param string $type Notice type (success|warning|error).
+	 * @param array  $args Extra query args.
+	 * @return void
+	 */
+	private function redirect_notice( $key, $type = 'success', array $args = array() ) {
+		$args = array_merge(
+			$args,
+			array(
+				'wss_notice'      => $key,
+				'wss_notice_type' => $type,
+			)
+		);
+
+		wp_safe_redirect( self::page_url( $args ) );
+		exit;
+	}
+
+	/**
 	 * Dispatch the plugin page to the correct screen.
 	 *
 	 * @return void
@@ -200,8 +252,24 @@ class WSS_Admin {
 	private function render_runs_screen() {
 		echo '<div class="wrap wss-wrap">';
 		echo '<h1 class="wp-heading-inline">' . esc_html__( 'Stock Sync', 'woo-stock-sync' ) . '</h1>';
+		$this->render_fetch_button();
+		echo '<hr class="wp-header-end" />';
 		self::render_tabs( 'runs' );
+		echo '<p class="wss-empty">' . esc_html__( 'No sync runs yet. Configure a feed in Settings, then Fetch and preview.', 'woo-stock-sync' ) . '</p>';
 		echo '</div>';
+	}
+
+	/**
+	 * Render the "Fetch and preview" primary action form.
+	 *
+	 * @return void
+	 */
+	private function render_fetch_button() {
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="wss-fetch-form">';
+		echo '<input type="hidden" name="action" value="wss_start_fetch" />';
+		wp_nonce_field( 'wss_start_fetch', 'wss_start_fetch_nonce' );
+		echo '<button type="submit" class="page-title-action">' . esc_html__( 'Fetch and preview', 'woo-stock-sync' ) . '</button>';
+		echo '</form>';
 	}
 
 	/**
@@ -271,7 +339,10 @@ class WSS_Admin {
 	private static function notice_messages() {
 		return array(
 			'settings_saved'   => __( 'Settings saved.', 'woo-stock-sync' ),
-			'invalid_settings' => __( 'Settings could not be saved. Please correct the highlighted fields.', 'woo-stock-sync' ),
+			'invalid_settings' => __( 'Configure the feed source and column mapping in Settings first.', 'woo-stock-sync' ),
+			'run_started'      => __( 'Sync started. The preview will appear here shortly.', 'woo-stock-sync' ),
+			'lock_held'        => __( 'A sync is already running. Wait for it to finish before starting another.', 'woo-stock-sync' ),
+			'db_error'         => __( 'The sync could not be started. Please try again.', 'woo-stock-sync' ),
 		);
 	}
 }
