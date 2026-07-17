@@ -126,6 +126,150 @@ class WSS_CLI {
 	}
 
 	/**
+	 * Apply (or resume) a previewed run synchronously.
+	 *
+	 * ## OPTIONS
+	 *
+	 * --run=<id>
+	 * : The run to apply.
+	 *
+	 * [--yes]
+	 * : Skip the confirmation prompt.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wss apply --run=42 --yes
+	 *
+	 * @param array $args       Positional args.
+	 * @param array $assoc_args Associative args.
+	 * @return void
+	 */
+	public function apply( $args, $assoc_args ) {
+		unset( $args );
+
+		$runner = $this->runner();
+		$run_id = isset( $assoc_args['run'] ) ? (int) $assoc_args['run'] : 0;
+		$run    = wss_get_run( $run_id );
+
+		if ( ! $run ) {
+			WP_CLI::error( 'Run not found (invalid_run).' );
+		}
+
+		$resumable = ( 'previewed' === $run->status ) || ( 'applying' === $run->status && $runner->is_stalled( $run ) );
+		if ( ! $resumable ) {
+			WP_CLI::error( 'This run cannot be applied in its current state (invalid_run_state).' );
+		}
+
+		$holder = $runner->get_lock_holder();
+		if ( $holder && $holder !== $run_id ) {
+			WP_CLI::error( 'Another sync is already running (lock_held).' );
+		}
+
+		WP_CLI::confirm( sprintf( 'Apply run %d now?', $run_id ), $assoc_args );
+
+		$guard = 0;
+		do {
+			$runner->handle_apply_batch( $run_id );
+			$run = wss_get_run( $run_id );
+			WP_CLI::log( sprintf( 'Processed %d of %d rows.', $runner->count_processed( $run ), (int) $run->rows_total ) );
+			++$guard;
+		} while ( 'applying' === $run->status && $guard < 1000000 );
+
+		$counts = $runner->count_rows( $run_id );
+		$failed = $counts['failed'] + $counts['apply_failed'];
+		WP_CLI::success(
+			sprintf(
+				'Run %d applied. Applied: %d, skipped: %d, failed: %d%s.',
+				$run_id,
+				$counts['applied'],
+				$counts['skipped'],
+				$failed,
+				$this->reason_summary( $run_id )
+			)
+		);
+	}
+
+	/**
+	 * Roll back the most recent applied run synchronously.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--yes]
+	 * : Skip the confirmation prompt.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wss rollback --yes
+	 *
+	 * @param array $args       Positional args.
+	 * @param array $assoc_args Associative args.
+	 * @return void
+	 */
+	public function rollback( $args, $assoc_args ) {
+		unset( $args );
+
+		$runner = $this->runner();
+		$run_id = $runner->latest_applied_run_id();
+
+		if ( ! $run_id ) {
+			WP_CLI::error( 'There is no applied run to roll back (nothing_to_rollback).' );
+		}
+
+		$holder = $runner->get_lock_holder();
+		if ( $holder && $holder !== $run_id ) {
+			WP_CLI::error( 'Another sync is already running (lock_held).' );
+		}
+
+		WP_CLI::confirm( sprintf( 'Roll back run %d? This overwrites any manual edits made since it was applied.', $run_id ), $assoc_args );
+
+		$guard = 0;
+		do {
+			$runner->handle_rollback_batch( $run_id );
+			$run = wss_get_run( $run_id );
+			++$guard;
+		} while ( 'rolling_back' === $run->status && $guard < 1000000 );
+
+		$counts = $runner->count_rows( $run_id );
+		WP_CLI::success(
+			sprintf(
+				'Run %d rolled back. Rolled back: %d, rollback failed: %d.',
+				$run_id,
+				$counts['rolled_back'],
+				$counts['rollback_failed']
+			)
+		);
+	}
+
+	/**
+	 * Build a " (reason: count, ...)" summary from a run's row reasons.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return string
+	 */
+	private function reason_summary( $run_id ) {
+		global $wpdb;
+
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT reason, COUNT(*) AS n FROM {$wpdb->prefix}wss_rows WHERE run_id = %d AND reason IS NOT NULL AND reason <> '' GROUP BY reason ORDER BY reason ASC",
+				$run_id
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) ) {
+			return '';
+		}
+
+		$parts = array();
+		foreach ( $rows as $row ) {
+			$parts[] = sprintf( '%s: %d', $row['reason'], (int) $row['n'] );
+		}
+
+		return ' (' . implode( ', ', $parts ) . ')';
+	}
+
+	/**
 	 * The most recent run in a given status, or 0.
 	 *
 	 * @param string $status Run status.
