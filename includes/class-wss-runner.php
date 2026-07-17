@@ -342,6 +342,20 @@ class WSS_Runner {
 	 * @return void
 	 */
 	public function handle_scheduled_fetch() {
+		if ( $this->get_lock_holder() ) {
+			wss_log(
+				'Scheduled fetch skipped; a sync is already running.',
+				array( 'holder' => $this->get_lock_holder() ),
+				'warning'
+			);
+			return;
+		}
+
+		if ( $this->has_unfinished_scheduled_run() ) {
+			wss_log( 'Scheduled fetch skipped; the previous scheduled run is not finished.', array(), 'warning' );
+			return;
+		}
+
 		$run_id = $this->begin_run( 'schedule', 0 );
 
 		if ( is_wp_error( $run_id ) ) {
@@ -354,6 +368,21 @@ class WSS_Runner {
 				'warning'
 			);
 		}
+	}
+
+	/**
+	 * Whether a prior scheduled run is still in a non-terminal state.
+	 *
+	 * @return bool
+	 */
+	private function has_unfinished_scheduled_run() {
+		global $wpdb;
+
+		$id = $wpdb->get_var(
+			"SELECT id FROM {$wpdb->prefix}wss_runs WHERE trigger_type = 'schedule' AND status NOT IN ( 'applied', 'rolled_back', 'cancelled', 'failed' ) ORDER BY id DESC LIMIT 1"
+		);
+
+		return (int) $id > 0;
 	}
 
 	/**
