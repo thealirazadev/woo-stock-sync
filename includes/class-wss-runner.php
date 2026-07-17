@@ -377,6 +377,19 @@ class WSS_Runner {
 			return;
 		}
 
+		if ( $this->is_locked( $product ) ) {
+			$this->update_row(
+				$row->id,
+				array(
+					'product_id' => $product_id,
+					'status'     => 'skipped',
+					'reason'     => 'locked',
+					'message'    => __( 'This product is locked from stock sync.', 'woo-stock-sync' ),
+				)
+			);
+			return;
+		}
+
 		$diff = $this->compute_field_diff( $product, $new_values );
 
 		$this->update_row(
@@ -469,6 +482,25 @@ class WSS_Runner {
 			'message' => '',
 			'current' => $current,
 		);
+	}
+
+	/**
+	 * Whether a product (or its parent, for a variation) is locked from stock sync.
+	 *
+	 * @param WC_Product $product Product.
+	 * @return bool
+	 */
+	private function is_locked( $product ) {
+		if ( 'yes' === get_post_meta( $product->get_id(), '_wss_locked', true ) ) {
+			return true;
+		}
+
+		$parent_id = (int) $product->get_parent_id();
+		if ( $parent_id && 'yes' === get_post_meta( $parent_id, '_wss_locked', true ) ) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -624,6 +656,19 @@ class WSS_Runner {
 					'status'  => 'apply_failed',
 					'reason'  => 'wc_error',
 					'message' => __( 'The product could not be loaded.', 'woo-stock-sync' ),
+				)
+			);
+			return;
+		}
+
+		// Re-check the lock at apply time: a product may have been locked after the preview.
+		if ( $this->is_locked( $product ) ) {
+			$this->update_row(
+				$row->id,
+				array(
+					'status'  => 'skipped',
+					'reason'  => 'locked',
+					'message' => __( 'This product is locked from stock sync.', 'woo-stock-sync' ),
 				)
 			);
 			return;
