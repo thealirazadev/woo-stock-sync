@@ -100,5 +100,10 @@ function wss_bootstrap() {
 	load_plugin_textdomain( 'woo-stock-sync', false, dirname( WSS_BASENAME ) . '/languages' );
 
 	WSS_Plugin::instance();
+
+	if ( defined( 'WP_CLI' ) && WP_CLI ) {
+		require_once WSS_PATH . 'includes/class-wss-cli.php';
+		WP_CLI::add_command( 'wss', 'WSS_CLI' );
+	}
 }
 add_action( 'plugins_loaded', 'wss_bootstrap' );
