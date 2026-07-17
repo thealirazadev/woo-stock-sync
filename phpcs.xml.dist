@@ -8,6 +8,8 @@
 	<exclude-pattern>/node_modules/*</exclude-pattern>
 	<exclude-pattern>/build/*</exclude-pattern>
 	<exclude-pattern>/tests/fixtures/*</exclude-pattern>
+	<!-- Test scaffolding deliberately redefines core WP/WC functions; not shipped (see .distignore). -->
+	<exclude-pattern>/tests/support/*</exclude-pattern>
 
 	<arg name="extensions" value="php"/>
 	<arg name="colors"/>
