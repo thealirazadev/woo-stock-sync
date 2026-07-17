@@ -275,7 +275,9 @@ class WSS_Admin {
 			$this->redirect_notice( 'invalid_run', 'error' );
 		}
 
-		if ( 'previewed' !== $run->status ) {
+		$resumable = ( 'previewed' === $run->status )
+			|| ( 'applying' === $run->status && $this->runner->is_stalled( $run ) );
+		if ( ! $resumable ) {
 			$this->redirect_notice( 'invalid_run_state', 'error', array( 'run' => $run_id ) );
 		}
 
@@ -423,6 +425,8 @@ class WSS_Admin {
 		require_once WSS_PATH . 'includes/class-wss-rows-table.php';
 		$table = new WSS_Rows_Table( $run_id, $status_filter );
 		$table->prepare_items();
+
+		$is_stalled = $this->runner->is_stalled( $run );
 
 		require WSS_PATH . 'templates/admin/run-detail.php';
 	}

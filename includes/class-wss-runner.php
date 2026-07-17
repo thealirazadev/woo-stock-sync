@@ -172,6 +172,70 @@ class WSS_Runner {
 	}
 
 	/**
+	 * Whether a processing run has stalled: no row progress for 10+ minutes and no pending action.
+	 *
+	 * @param object $run Run row.
+	 * @return bool
+	 */
+	public function is_stalled( $run ) {
+		$hooks = array(
+			'applying'     => 'wss_apply_batch',
+			'rolling_back' => 'wss_rollback_batch',
+			'diffing'      => 'wss_diff_batch',
+		);
+
+		if ( ! isset( $hooks[ $run->status ] ) ) {
+			return false;
+		}
+
+		global $wpdb;
+
+		$last = $wpdb->get_var(
+			$wpdb->prepare( "SELECT MAX(updated_at) FROM {$wpdb->prefix}wss_rows WHERE run_id = %d", (int) $run->id )
+		);
+
+		$reference = $last ? $last : $run->created_at;
+		$idle_for  = time() - (int) strtotime( $reference . ' UTC' );
+		if ( $idle_for < 10 * MINUTE_IN_SECONDS ) {
+			return false;
+		}
+
+		if ( function_exists( 'as_has_scheduled_action' )
+			&& as_has_scheduled_action( $hooks[ $run->status ], array( (int) $run->id ), 'woo-stock-sync' ) ) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Whether a stale lock can be released: held for 15+ minutes with no row progress.
+	 *
+	 * @return bool
+	 */
+	public function lock_is_stale() {
+		$holder = $this->get_lock_holder();
+		if ( ! $holder ) {
+			return false;
+		}
+
+		$run = wss_get_run( $holder );
+		if ( ! $run ) {
+			return true;
+		}
+
+		global $wpdb;
+
+		$last = $wpdb->get_var(
+			$wpdb->prepare( "SELECT MAX(updated_at) FROM {$wpdb->prefix}wss_rows WHERE run_id = %d", (int) $holder )
+		);
+
+		$reference = $last ? $last : $run->created_at;
+
+		return ( time() - (int) strtotime( $reference . ' UTC' ) ) > 15 * MINUTE_IN_SECONDS;
+	}
+
+	/**
 	 * Validate settings, create a run, and queue the fetch.
 	 *
 	 * @param string $trigger      Trigger type: manual|schedule|cli.

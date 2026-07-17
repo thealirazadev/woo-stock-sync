@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit;
  * @var object         $run
  * @var WSS_Rows_Table $table
  * @var string         $status_filter
+ * @var bool           $is_stalled
  */
 
 $wss_total     = (int) $run->rows_total;
@@ -126,7 +127,19 @@ $wss_in_prog   = in_array( $run->status, array( 'pending', 'fetching', 'diffing'
 		</p>
 	<?php endif; ?>
 
-	<?php if ( $wss_in_prog ) : ?>
+	<?php if ( ! empty( $is_stalled ) ) : ?>
+		<div class="notice notice-warning inline">
+			<p><?php esc_html_e( 'This run appears to have stalled. You can resume it from where it stopped.', 'woo-stock-sync' ); ?></p>
+		</div>
+		<p class="wss-actions">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wss-inline-form" data-wss-confirm="<?php echo esc_attr__( 'Resume this sync from where it stopped?', 'woo-stock-sync' ); ?>">
+				<input type="hidden" name="action" value="wss_apply_run" />
+				<input type="hidden" name="run_id" value="<?php echo esc_attr( $run->id ); ?>" />
+				<?php wp_nonce_field( 'wss_apply_run', 'wss_apply_run_nonce' ); ?>
+				<button type="submit" class="button button-primary"><?php esc_html_e( 'Resume sync', 'woo-stock-sync' ); ?></button>
+			</form>
+		</p>
+	<?php elseif ( $wss_in_prog ) : ?>
 		<p class="wss-progress-note" role="status">
 			<?php esc_html_e( 'This run is still processing. Reload the page to see the latest results.', 'woo-stock-sync' ); ?>
 		</p>
