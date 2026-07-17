@@ -1,0 +1,15 @@
+/.git
+/.github
+/.gitignore
+/.distignore
+/.wp-env.json
+/bin
+/docs
+/node_modules
+/tests
+/vendor
+/composer.json
+/composer.lock
+/phpcs.xml.dist
+/phpunit.xml.dist
+/README.md

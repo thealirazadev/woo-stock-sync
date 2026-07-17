@@ -1,0 +1,28 @@
+{
+    "name": "thealirazadev/woo-stock-sync",
+    "description": "Synchronize WooCommerce stock quantities and prices from a supplier feed by SKU, with dry-run diff, batched apply, and rollback.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "3.10.2",
+        "wp-coding-standards/wpcs": "3.1.0",
+        "phpcompatibility/phpcompatibility-wp": "2.1.4",
+        "phpunit/phpunit": "9.6.19",
+        "yoast/phpunit-polyfills": "1.1.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "optimize-autoloader": true
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "test": "phpunit",
+        "build": "wp dist-archive . ./build/woo-stock-sync.zip"
+    }
+}

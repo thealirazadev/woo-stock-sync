@@ -1,0 +1,10 @@
+/vendor/
+/node_modules/
+composer.phar
+*.log
+.DS_Store
+.wp-env.override.json
+/wp-cli.local.yml
+/build/
+/dist/
+*.zip

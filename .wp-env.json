@@ -1,0 +1,15 @@
+{
+	"core": "WordPress/WordPress",
+	"phpVersion": "8.2",
+	"plugins": [ ".", "https://downloads.wordpress.org/plugin/woocommerce.latest-stable.zip" ],
+	"config": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_DISPLAY": true,
+		"WP_DEBUG_LOG": true
+	},
+	"env": {
+		"tests": {
+			"plugins": [ ".", "https://downloads.wordpress.org/plugin/woocommerce.latest-stable.zip" ]
+		}
+	}
+}
