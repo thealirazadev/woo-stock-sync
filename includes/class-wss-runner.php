@@ -29,6 +29,7 @@ class WSS_Runner {
 		add_action( 'wss_fetch_run', array( $this, 'handle_fetch' ) );
 		add_action( 'wss_diff_batch', array( $this, 'handle_diff_batch' ) );
 		add_action( 'wss_apply_batch', array( $this, 'handle_apply_batch' ) );
+		add_action( 'wss_rollback_batch', array( $this, 'handle_rollback_batch' ) );
 	}
 
 	/**
@@ -862,6 +863,174 @@ class WSS_Runner {
 				'counts' => $counts,
 			),
 			'info'
+		);
+	}
+
+	/**
+	 * The ID of the most recent applied run, or 0.
+	 *
+	 * @return int
+	 */
+	public function latest_applied_run_id() {
+		global $wpdb;
+
+		$id = $wpdb->get_var( "SELECT id FROM {$wpdb->prefix}wss_runs WHERE status = 'applied' ORDER BY id DESC LIMIT 1" );
+
+		return (int) $id;
+	}
+
+	/**
+	 * Background action: roll a run back from its snapshots, in batches.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return void
+	 */
+	public function handle_rollback_batch( $run_id ) {
+		$run = wss_get_run( $run_id );
+		if ( ! $run || ! in_array( $run->status, array( 'applied', 'rolling_back' ), true ) ) {
+			return;
+		}
+
+		if ( 'applied' === $run->status && $this->latest_applied_run_id() !== (int) $run_id ) {
+			return; // Only the most recent applied run can be rolled back.
+		}
+
+		if ( ! $this->acquire_lock( $run_id ) ) {
+			wss_log(
+				'Rollback skipped; the sync lock is held by another run.',
+				array(
+					'run_id' => (int) $run_id,
+					'holder' => $this->get_lock_holder(),
+				),
+				'warning'
+			);
+			return;
+		}
+
+		if ( 'applied' === $run->status ) {
+			$this->set_status( $run_id, 'rolling_back' );
+		}
+
+		global $wpdb;
+
+		$batch = (int) apply_filters( 'wss_batch_size', WSS_DEFAULT_BATCH_SIZE );
+		$snaps = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}wss_snapshots WHERE run_id = %d AND restored = 0 ORDER BY id ASC LIMIT %d",
+				$run_id,
+				$batch
+			)
+		);
+
+		foreach ( (array) $snaps as $snap ) {
+			$this->rollback_snapshot( $run_id, $snap );
+		}
+
+		$remaining = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}wss_snapshots WHERE run_id = %d AND restored = 0",
+				$run_id
+			)
+		);
+
+		if ( $remaining > 0 ) {
+			as_enqueue_async_action( 'wss_rollback_batch', array( $run_id ), 'woo-stock-sync' );
+			return;
+		}
+
+		$this->set_status( $run_id, 'rolled_back', array( 'finished_at' => current_time( 'mysql', true ) ) );
+		$this->release_lock( $run_id );
+
+		wss_log( 'Run rolled back.', array( 'run_id' => (int) $run_id ), 'info' );
+	}
+
+	/**
+	 * Restore one snapshot's prior values. Marks the snapshot processed either way.
+	 *
+	 * @param int    $run_id Run ID.
+	 * @param object $snap   Snapshot row.
+	 * @return void
+	 */
+	private function rollback_snapshot( $run_id, $snap ) {
+		$prior      = json_decode( $snap->prior_values, true );
+		$prior      = is_array( $prior ) ? $prior : array();
+		$product_id = (int) $snap->product_id;
+
+		$this->mark_snapshot_restored( $snap->id );
+
+		$product = wc_get_product( $product_id );
+		if ( ! $product ) {
+			$this->set_rollback_row_status( $run_id, $product_id, 'rollback_failed', 'product_missing', __( 'The product no longer exists.', 'woo-stock-sync' ) );
+			return;
+		}
+
+		try {
+			if ( array_key_exists( 'stock_quantity', $prior ) && null !== $prior['stock_quantity'] && $product->managing_stock() ) {
+				$product->set_stock_quantity( $prior['stock_quantity'] );
+			}
+			if ( array_key_exists( 'regular_price', $prior ) ) {
+				$product->set_regular_price( (string) $prior['regular_price'] );
+			}
+			if ( array_key_exists( 'sale_price', $prior ) ) {
+				$sale = ( null === $prior['sale_price'] ) ? '' : (string) $prior['sale_price'];
+				$product->set_sale_price( $sale );
+			}
+			$product->save();
+
+			$this->set_rollback_row_status( $run_id, $product_id, 'rolled_back', '', '' );
+		} catch ( \Throwable $error ) {
+			wss_log(
+				'Rollback failed for a product.',
+				array(
+					'run_id'     => (int) $run_id,
+					'product_id' => $product_id,
+					'error'      => $error->getMessage(),
+				)
+			);
+			$this->set_rollback_row_status( $run_id, $product_id, 'rollback_failed', 'wc_error', $error->getMessage() );
+		}
+	}
+
+	/**
+	 * Mark a snapshot as restored so the cursor advances.
+	 *
+	 * @param int $snapshot_id Snapshot ID.
+	 * @return void
+	 */
+	private function mark_snapshot_restored( $snapshot_id ) {
+		global $wpdb;
+
+		$wpdb->update( $wpdb->prefix . 'wss_snapshots', array( 'restored' => 1 ), array( 'id' => (int) $snapshot_id ), array( '%d' ), array( '%d' ) );
+	}
+
+	/**
+	 * Update the applied row for a product to a rollback status.
+	 *
+	 * @param int    $run_id     Run ID.
+	 * @param int    $product_id Product ID.
+	 * @param string $status     New row status.
+	 * @param string $reason     Reason.
+	 * @param string $message    Message.
+	 * @return void
+	 */
+	private function set_rollback_row_status( $run_id, $product_id, $status, $reason, $message ) {
+		global $wpdb;
+
+		$wpdb->update(
+			$wpdb->prefix . 'wss_rows',
+			array(
+				'status'     => $status,
+				'reason'     => $reason,
+				'message'    => $message,
+				'updated_at' => current_time( 'mysql', true ),
+			),
+			array(
+				'run_id'     => (int) $run_id,
+				'product_id' => (int) $product_id,
+				'status'     => 'applied',
+			),
+			array( '%s', '%s', '%s', '%s' ),
+			array( '%d', '%d', '%s' )
 		);
 	}
 
