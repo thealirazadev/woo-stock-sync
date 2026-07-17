@@ -103,6 +103,29 @@ $wss_in_prog   = in_array( $run->status, array( 'pending', 'fetching', 'diffing'
 		<?php endif; ?>
 	</div>
 
+	<?php if ( 'previewed' === $run->status ) : ?>
+		<?php
+		$wss_age     = ( empty( $run->created_at ) || '0000-00-00 00:00:00' === $run->created_at )
+			? ''
+			: human_time_diff( strtotime( $run->created_at . ' UTC' ), time() );
+		$wss_confirm = ( '' !== $wss_age )
+			? sprintf(
+				/* translators: %s: human-readable age, e.g. "3 hours". */
+				__( 'This preview was created %s ago. Apply it now?', 'woo-stock-sync' ),
+				$wss_age
+			)
+			: __( 'Apply this sync now?', 'woo-stock-sync' );
+		?>
+		<p class="wss-actions">
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="wss-inline-form" data-wss-confirm="<?php echo esc_attr( $wss_confirm ); ?>">
+				<input type="hidden" name="action" value="wss_apply_run" />
+				<input type="hidden" name="run_id" value="<?php echo esc_attr( $run->id ); ?>" />
+				<?php wp_nonce_field( 'wss_apply_run', 'wss_apply_run_nonce' ); ?>
+				<button type="submit" class="button button-primary"><?php esc_html_e( 'Apply sync', 'woo-stock-sync' ); ?></button>
+			</form>
+		</p>
+	<?php endif; ?>
+
 	<?php if ( $wss_in_prog ) : ?>
 		<p class="wss-progress-note" role="status">
 			<?php esc_html_e( 'This run is still processing. Reload the page to see the latest results.', 'woo-stock-sync' ); ?>

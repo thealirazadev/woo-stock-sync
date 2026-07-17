@@ -17,6 +17,23 @@
 	}
 
 	ready( function () {
+		// Confirmation dialogs for destructive-ish actions (apply, roll back, release lock).
+		var confirmForms = document.querySelectorAll( 'form[data-wss-confirm]' );
+		Array.prototype.forEach.call( confirmForms, function ( form ) {
+			form.addEventListener( 'submit', function ( event ) {
+				var message = form.getAttribute( 'data-wss-confirm' );
+				if ( message && ! window.confirm( message ) ) {
+					event.preventDefault();
+					return;
+				}
+				var button = form.querySelector( 'button[type="submit"], input[type="submit"]' );
+				if ( button ) {
+					button.setAttribute( 'aria-disabled', 'true' );
+					button.classList.add( 'disabled' );
+				}
+			} );
+		} );
+
 		var btn = document.getElementById( 'wss-load-columns' );
 		if ( ! btn ) {
 			return;
