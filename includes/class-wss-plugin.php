@@ -34,6 +34,13 @@ class WSS_Plugin {
 	private $admin = null;
 
 	/**
+	 * Runner component.
+	 *
+	 * @var WSS_Runner|null
+	 */
+	private $runner = null;
+
+	/**
 	 * Get (and lazily build) the singleton instance.
 	 *
 	 * @return WSS_Plugin
@@ -54,9 +61,12 @@ class WSS_Plugin {
 			WSS_Install::maybe_upgrade();
 		}
 
+		// The runner registers Action Scheduler callbacks, which fire outside admin too.
+		$this->runner = new WSS_Runner();
+
 		if ( is_admin() ) {
 			$this->settings = new WSS_Settings();
-			$this->admin    = new WSS_Admin( $this->settings );
+			$this->admin    = new WSS_Admin( $this->settings, $this->runner );
 		}
 	}
 
@@ -67,5 +77,14 @@ class WSS_Plugin {
 	 */
 	public function settings() {
 		return $this->settings;
+	}
+
+	/**
+	 * Get the runner component.
+	 *
+	 * @return WSS_Runner|null
+	 */
+	public function runner() {
+		return $this->runner;
 	}
 }

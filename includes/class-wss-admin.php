@@ -25,12 +25,21 @@ class WSS_Admin {
 	private $settings;
 
 	/**
+	 * Runner component.
+	 *
+	 * @var WSS_Runner
+	 */
+	private $runner;
+
+	/**
 	 * Constructor: wire admin hooks.
 	 *
 	 * @param WSS_Settings $settings Settings component.
+	 * @param WSS_Runner   $runner   Runner component.
 	 */
-	public function __construct( WSS_Settings $settings ) {
+	public function __construct( WSS_Settings $settings, WSS_Runner $runner ) {
 		$this->settings = $settings;
+		$this->runner   = $runner;
 
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
