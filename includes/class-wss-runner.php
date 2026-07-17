@@ -30,6 +30,9 @@ class WSS_Runner {
 		add_action( 'wss_diff_batch', array( $this, 'handle_diff_batch' ) );
 		add_action( 'wss_apply_batch', array( $this, 'handle_apply_batch' ) );
 		add_action( 'wss_rollback_batch', array( $this, 'handle_rollback_batch' ) );
+		add_action( 'wss_scheduled_fetch', array( $this, 'handle_scheduled_fetch' ) );
+		add_action( 'update_option_wss_settings', array( $this, 'resync_schedule' ) );
+		add_action( 'add_option_wss_settings', array( $this, 'resync_schedule' ) );
 	}
 
 	/**
@@ -288,6 +291,69 @@ class WSS_Runner {
 		as_enqueue_async_action( 'wss_fetch_run', array( $run_id ), 'woo-stock-sync' );
 
 		return $run_id;
+	}
+
+	/**
+	 * Register/update/remove the recurring scheduled fetch to match the setting.
+	 *
+	 * Unschedules any existing action first, so exactly one recurring action exists and a changed
+	 * interval reschedules cleanly.
+	 *
+	 * @param string $schedule manual|hourly|twicedaily|daily.
+	 * @return void
+	 */
+	public function sync_schedule( $schedule ) {
+		if ( ! function_exists( 'as_schedule_recurring_action' ) ) {
+			return;
+		}
+
+		$intervals = array(
+			'hourly'     => HOUR_IN_SECONDS,
+			'twicedaily' => 12 * HOUR_IN_SECONDS,
+			'daily'      => DAY_IN_SECONDS,
+		);
+
+		as_unschedule_all_actions( 'wss_scheduled_fetch', array(), 'woo-stock-sync' );
+
+		if ( isset( $intervals[ $schedule ] ) ) {
+			as_schedule_recurring_action(
+				time() + $intervals[ $schedule ],
+				$intervals[ $schedule ],
+				'wss_scheduled_fetch',
+				array(),
+				'woo-stock-sync'
+			);
+		}
+	}
+
+	/**
+	 * Re-sync the schedule whenever settings are saved.
+	 *
+	 * @return void
+	 */
+	public function resync_schedule() {
+		$settings = wss_get_settings();
+		$this->sync_schedule( $settings['schedule'] );
+	}
+
+	/**
+	 * Recurring action: start a scheduled run from the saved settings.
+	 *
+	 * @return void
+	 */
+	public function handle_scheduled_fetch() {
+		$run_id = $this->begin_run( 'schedule', 0 );
+
+		if ( is_wp_error( $run_id ) ) {
+			wss_log(
+				'Scheduled fetch skipped.',
+				array(
+					'reason'  => $run_id->get_error_code(),
+					'message' => $run_id->get_error_message(),
+				),
+				'warning'
+			);
+		}
 	}
 
 	/**

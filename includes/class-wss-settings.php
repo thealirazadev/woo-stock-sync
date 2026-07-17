@@ -190,6 +190,11 @@ class WSS_Settings {
 			$clean['upload_name'] = $upload['name'];
 		}
 
+		$schedules         = array( 'manual', 'hourly', 'twicedaily', 'daily' );
+		$clean['schedule'] = ( isset( $raw_post['schedule'] ) && in_array( $raw_post['schedule'], $schedules, true ) )
+			? $raw_post['schedule']
+			: 'manual';
+
 		$mapping = array(
 			'sku'           => '',
 			'stock'         => '',

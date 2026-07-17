@@ -111,6 +111,33 @@ $wss_has_secret = ( '' !== $settings['auth_header_value'] );
 		</tbody>
 	</table>
 
+	<h2><?php esc_html_e( 'Schedule', 'woo-stock-sync' ); ?></h2>
+	<table class="form-table" role="presentation">
+		<tbody>
+			<tr>
+				<th scope="row"><label for="wss-schedule"><?php esc_html_e( 'Automatic fetch', 'woo-stock-sync' ); ?></label></th>
+				<td>
+					<?php
+					$wss_intervals = array(
+						'manual'     => __( 'Manual only', 'woo-stock-sync' ),
+						'hourly'     => __( 'Hourly', 'woo-stock-sync' ),
+						'twicedaily' => __( 'Twice daily', 'woo-stock-sync' ),
+						'daily'      => __( 'Daily', 'woo-stock-sync' ),
+					);
+					?>
+					<select name="schedule" id="wss-schedule">
+						<?php foreach ( $wss_intervals as $wss_value => $wss_label ) : ?>
+							<option value="<?php echo esc_attr( $wss_value ); ?>" <?php selected( $wss_value, $settings['schedule'] ); ?>>
+								<?php echo esc_html( $wss_label ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+					<p class="description"><?php esc_html_e( 'How often to fetch the remote feed automatically. Scheduled runs stop at the preview unless auto-apply is enabled.', 'woo-stock-sync' ); ?></p>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+
 	<h2><?php esc_html_e( 'Column mapping', 'woo-stock-sync' ); ?></h2>
 	<p class="description">
 		<?php esc_html_e( 'Match feed columns to product fields. A blank cell in the feed means "no change" for that field.', 'woo-stock-sync' ); ?>
