@@ -276,6 +276,113 @@ class WSS_Feed {
 	}
 
 	/**
+	 * Parse a resolved feed source, emitting one validated row result per feed row.
+	 *
+	 * The emit callback receives each row array (see {@see WSS_Feed::map_and_validate_row()}) so the
+	 * caller can stage rows without the whole feed ever being held in memory.
+	 *
+	 * @param array    $source   Resolved source (format + path).
+	 * @param array    $mapping  Column mapping.
+	 * @param array    $settings Plugin settings.
+	 * @param callable $emit     Callback invoked with each row result.
+	 * @return int|WP_Error Number of rows parsed, or WP_Error on a run-level failure.
+	 */
+	public function parse( array $source, array $mapping, array $settings, callable $emit ) {
+		return $this->parse_csv( $source['path'], $mapping, $settings, $emit );
+	}
+
+	/**
+	 * Stream a CSV feed row by row with fgetcsv (constant memory).
+	 *
+	 * @param string   $path     File path.
+	 * @param array    $mapping  Column mapping.
+	 * @param array    $settings Plugin settings.
+	 * @param callable $emit     Row callback.
+	 * @return int|WP_Error Rows parsed, or WP_Error on a run-level failure.
+	 */
+	private function parse_csv( $path, array $mapping, array $settings, callable $emit ) {
+		$handle = fopen( $path, 'rb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- streaming reader.
+		if ( ! $handle ) {
+			return new WP_Error( 'fetch_failed', __( 'The feed file could not be opened.', 'woo-stock-sync' ) );
+		}
+
+		$header = fgetcsv( $handle );
+		if ( ! is_array( $header ) ) {
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- streaming reader.
+			return new WP_Error( 'empty_feed', __( 'The feed file has no header row.', 'woo-stock-sync' ) );
+		}
+
+		$header_map = $this->header_map( $header );
+		$cap        = (int) apply_filters( 'wss_row_cap', WSS_ROW_CAP );
+		$seen       = array();
+		$row_num    = 0;
+
+		// phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition -- streaming read.
+		while ( false !== ( $data = fgetcsv( $handle ) ) ) {
+			if ( null === $data || array( null ) === $data ) {
+				continue; // Skip blank lines.
+			}
+
+			++$row_num;
+
+			$assoc = array();
+			foreach ( $header_map as $index => $name ) {
+				if ( '' === $name || isset( $assoc[ $name ] ) ) {
+					continue;
+				}
+				$assoc[ $name ] = isset( $data[ $index ] ) ? $data[ $index ] : '';
+			}
+
+			$emit( $this->map_and_validate_row( $row_num, $assoc, $mapping, $settings, $seen ) );
+
+			if ( $row_num > $cap ) {
+				fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- streaming reader.
+				return $this->too_large_error( $cap );
+			}
+		}
+
+		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- streaming reader.
+
+		return $row_num;
+	}
+
+	/**
+	 * Build an index => cleaned column-name map from a raw CSV header row.
+	 *
+	 * @param array $header Raw header cells.
+	 * @return array Index-keyed column names (BOM stripped, trimmed).
+	 */
+	private function header_map( array $header ) {
+		$map = array();
+		foreach ( $header as $index => $name ) {
+			$name = trim( (string) $name );
+			if ( 0 === $index ) {
+				$name = preg_replace( '/^\xEF\xBB\xBF/', '', $name );
+			}
+			$map[ $index ] = $name;
+		}
+
+		return $map;
+	}
+
+	/**
+	 * The run-level error returned when a feed exceeds the row cap.
+	 *
+	 * @param int $cap Row cap.
+	 * @return WP_Error
+	 */
+	private function too_large_error( $cap ) {
+		return new WP_Error(
+			'too_large',
+			sprintf(
+				/* translators: %s: maximum row count. */
+				__( 'The feed has more than %s rows, the supported maximum. Split it into smaller feeds.', 'woo-stock-sync' ),
+				number_format_i18n( $cap )
+			)
+		);
+	}
+
+	/**
 	 * Map a raw feed row (cells keyed by column name) to product-field values, and validate it.
 	 *
 	 * Never throws or aborts: an invalid row is returned with a 'failed' status and a reason so the
