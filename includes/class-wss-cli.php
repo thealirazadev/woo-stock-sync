@@ -270,6 +270,60 @@ class WSS_CLI {
 	}
 
 	/**
+	 * List the sync run history, newest first.
+	 *
+	 * ## OPTIONS
+	 *
+	 * [--format=<format>]
+	 * : Output format.
+	 * ---
+	 * default: table
+	 * options:
+	 *   - table
+	 *   - json
+	 *   - csv
+	 * ---
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wss runs
+	 *     wp wss runs --format=json
+	 *
+	 * @param array $args       Positional args.
+	 * @param array $assoc_args Associative args.
+	 * @return void
+	 */
+	public function runs( $args, $assoc_args ) {
+		unset( $args );
+
+		global $wpdb;
+
+		$format = isset( $assoc_args['format'] ) ? $assoc_args['format'] : 'table';
+		$rows   = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}wss_runs ORDER BY id DESC" );
+
+		$items = array();
+		foreach ( (array) $rows as $row ) {
+			$date = ( empty( $row->created_at ) || '0000-00-00 00:00:00' === $row->created_at )
+				? ''
+				: get_date_from_gmt( $row->created_at, 'Y-m-d H:i' );
+
+			$items[] = array(
+				'id'      => (int) $row->id,
+				'date'    => $date,
+				'trigger' => $row->trigger_type,
+				'source'  => wss_format_source( $row ),
+				'status'  => $row->status,
+				'planned' => (int) $row->rows_planned,
+				'skipped' => (int) $row->rows_skipped,
+				'failed'  => (int) $row->rows_failed,
+				'applied' => (int) $row->rows_applied,
+			);
+		}
+
+		WP_CLI\Utils\format_items( $format, $items, array( 'id', 'date', 'trigger', 'source', 'status', 'planned', 'skipped', 'failed', 'applied' ) );
+	}
+
+	/**
 	 * The most recent run in a given status, or 0.
 	 *
 	 * @param string $status Run status.
