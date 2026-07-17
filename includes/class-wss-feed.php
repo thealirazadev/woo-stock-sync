@@ -288,7 +288,44 @@ class WSS_Feed {
 	 * @return int|WP_Error Number of rows parsed, or WP_Error on a run-level failure.
 	 */
 	public function parse( array $source, array $mapping, array $settings, callable $emit ) {
+		if ( 'json' === $source['format'] ) {
+			return $this->parse_json( $source['path'], $mapping, $settings, $emit );
+		}
+
 		return $this->parse_csv( $source['path'], $mapping, $settings, $emit );
+	}
+
+	/**
+	 * Parse a JSON feed (a flat array of objects) decoded under the size cap.
+	 *
+	 * @param string   $path     File path.
+	 * @param array    $mapping  Column mapping.
+	 * @param array    $settings Plugin settings.
+	 * @param callable $emit     Row callback.
+	 * @return int|WP_Error Rows parsed, or WP_Error on a run-level failure.
+	 */
+	private function parse_json( $path, array $mapping, array $settings, callable $emit ) {
+		$data = $this->decode_json_file( $path );
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
+
+		$cap     = (int) apply_filters( 'wss_row_cap', WSS_ROW_CAP );
+		$seen    = array();
+		$row_num = 0;
+
+		foreach ( $data as $entry ) {
+			++$row_num;
+
+			$assoc = is_array( $entry ) ? $entry : array();
+			$emit( $this->map_and_validate_row( $row_num, $assoc, $mapping, $settings, $seen ) );
+
+			if ( $row_num > $cap ) {
+				return $this->too_large_error( $cap );
+			}
+		}
+
+		return $row_num;
 	}
 
 	/**
