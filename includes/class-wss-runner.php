@@ -13,9 +13,9 @@ defined( 'ABSPATH' ) || exit;
 class WSS_Runner {
 
 	/**
-	 * Statuses that count as an active (running) sync.
+	 * Option name for the single-run mutex.
 	 */
-	const ACTIVE_STATUSES = array( 'fetching', 'diffing', 'applying', 'rolling_back' );
+	const LOCK_OPTION = 'wss_active_run';
 
 	/**
 	 * Rows inserted per staging query.
@@ -110,6 +110,8 @@ class WSS_Runner {
 			)
 		);
 
+		$this->release_lock( $run_id );
+
 		wss_log(
 			'Run failed.',
 			array(
@@ -120,20 +122,52 @@ class WSS_Runner {
 	}
 
 	/**
-	 * The ID of a currently-running sync, if any.
+	 * Try to acquire the single-run lock for a run.
 	 *
-	 * Phase 1 overlap guard based on run status; the atomic option lock is added in Phase 2.
+	 * Atomic thanks to the unique key on option_name: add_option only succeeds when the option does
+	 * not yet exist. Re-entrant for the run that already holds it (so a resumed run can reacquire).
 	 *
-	 * @return int Run ID, or 0 when none is active.
+	 * @param int $run_id Run ID.
+	 * @return bool True if the run now holds the lock.
 	 */
-	public function active_run_id() {
-		global $wpdb;
+	public function acquire_lock( $run_id ) {
+		$run_id = (int) $run_id;
 
-		$id = $wpdb->get_var(
-			"SELECT id FROM {$wpdb->prefix}wss_runs WHERE status IN ( 'fetching', 'diffing', 'applying', 'rolling_back' ) ORDER BY id DESC LIMIT 1"
-		);
+		if ( add_option( self::LOCK_OPTION, $run_id, '', 'no' ) ) {
+			return true;
+		}
 
-		return (int) $id;
+		return $this->get_lock_holder() === $run_id;
+	}
+
+	/**
+	 * The run ID currently holding the lock, or 0.
+	 *
+	 * @return int
+	 */
+	public function get_lock_holder() {
+		return (int) get_option( self::LOCK_OPTION, 0 );
+	}
+
+	/**
+	 * Release the lock if it is held by the given run.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return void
+	 */
+	public function release_lock( $run_id ) {
+		if ( $this->get_lock_holder() === (int) $run_id ) {
+			delete_option( self::LOCK_OPTION );
+		}
+	}
+
+	/**
+	 * Force-release the lock regardless of holder (stale-lock recovery).
+	 *
+	 * @return void
+	 */
+	public function force_release_lock() {
+		delete_option( self::LOCK_OPTION );
 	}
 
 	/**
@@ -168,7 +202,7 @@ class WSS_Runner {
 			$source_ref  = $settings['upload_path'];
 		}
 
-		if ( $this->active_run_id() ) {
+		if ( $this->get_lock_holder() ) {
 			return new WP_Error( 'lock_held', __( 'A sync is already running. Wait for it to finish before starting another.', 'woo-stock-sync' ) );
 		}
 
@@ -200,6 +234,11 @@ class WSS_Runner {
 		$run = wss_get_run( $run_id );
 		if ( ! $run || 'pending' !== $run->status ) {
 			return; // Only a pending run is fetched; keeps re-runs idempotent.
+		}
+
+		if ( ! $this->acquire_lock( $run_id ) ) {
+			$this->fail_run( $run_id, __( 'Another sync is already running. This run was not started.', 'woo-stock-sync' ) );
+			return;
 		}
 
 		$this->set_status( $run_id, 'fetching' );
@@ -460,6 +499,9 @@ class WSS_Runner {
 				'rows_failed'  => $counts['failed'],
 			)
 		);
+
+		// A previewed run awaiting review must not hold the lock.
+		$this->release_lock( $run_id );
 
 		wss_log(
 			'Run previewed.',
