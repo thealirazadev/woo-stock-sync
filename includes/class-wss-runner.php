@@ -28,6 +28,7 @@ class WSS_Runner {
 	public function __construct() {
 		add_action( 'wss_fetch_run', array( $this, 'handle_fetch' ) );
 		add_action( 'wss_diff_batch', array( $this, 'handle_diff_batch' ) );
+		add_action( 'wss_apply_batch', array( $this, 'handle_apply_batch' ) );
 	}
 
 	/**
@@ -542,6 +543,175 @@ class WSS_Runner {
 		}
 
 		return $counts;
+	}
+
+	/**
+	 * Background action: apply a batch of planned rows via WooCommerce CRUD.
+	 *
+	 * Runs only from previewed (first batch) or applying (resume). The cursor is derived from the
+	 * remaining planned rows, so a batch that dies mid-way resumes with no row applied twice.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return void
+	 */
+	public function handle_apply_batch( $run_id ) {
+		$run = wss_get_run( $run_id );
+		if ( ! $run || ! in_array( $run->status, array( 'previewed', 'applying' ), true ) ) {
+			return;
+		}
+
+		if ( ! $this->acquire_lock( $run_id ) ) {
+			wss_log(
+				'Apply skipped; the sync lock is held by another run.',
+				array(
+					'run_id' => (int) $run_id,
+					'holder' => $this->get_lock_holder(),
+				),
+				'warning'
+			);
+			return;
+		}
+
+		if ( 'previewed' === $run->status ) {
+			$this->set_status( $run_id, 'applying' );
+		}
+
+		global $wpdb;
+
+		$batch = (int) apply_filters( 'wss_batch_size', WSS_DEFAULT_BATCH_SIZE );
+		$rows  = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$wpdb->prefix}wss_rows WHERE run_id = %d AND status = 'planned' ORDER BY id ASC LIMIT %d",
+				$run_id,
+				$batch
+			)
+		);
+
+		foreach ( (array) $rows as $row ) {
+			$this->apply_row( $row );
+		}
+
+		$remaining = (int) $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->prefix}wss_rows WHERE run_id = %d AND status = 'planned'",
+				$run_id
+			)
+		);
+
+		if ( $remaining > 0 ) {
+			as_enqueue_async_action( 'wss_apply_batch', array( $run_id ), 'woo-stock-sync' );
+			return;
+		}
+
+		$this->finalize_applied( $run_id );
+	}
+
+	/**
+	 * Apply one planned row. A thrown error is caught and recorded; the batch continues.
+	 *
+	 * @param object $row Row.
+	 * @return void
+	 */
+	private function apply_row( $row ) {
+		$new_values = json_decode( $row->new_values, true );
+		$new_values = is_array( $new_values ) ? $new_values : array();
+
+		$product = wc_get_product( (int) $row->product_id );
+		if ( ! $product ) {
+			$this->update_row(
+				$row->id,
+				array(
+					'status'  => 'apply_failed',
+					'reason'  => 'wc_error',
+					'message' => __( 'The product could not be loaded.', 'woo-stock-sync' ),
+				)
+			);
+			return;
+		}
+
+		try {
+			$this->write_values( $product, $new_values );
+			$product->save();
+
+			$this->update_row(
+				$row->id,
+				array(
+					'status'  => 'applied',
+					'reason'  => '',
+					'message' => '',
+				)
+			);
+		} catch ( \Throwable $error ) {
+			wss_log(
+				'Apply failed for a row.',
+				array(
+					'row_id' => (int) $row->id,
+					'error'  => $error->getMessage(),
+				)
+			);
+			$this->update_row(
+				$row->id,
+				array(
+					'status'  => 'apply_failed',
+					'reason'  => 'wc_error',
+					'message' => $error->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
+	 * Write mapped values onto a product via CRUD setters.
+	 *
+	 * @param WC_Product $product    Product.
+	 * @param array      $new_values Field => value.
+	 * @return void
+	 */
+	private function write_values( $product, array $new_values ) {
+		foreach ( $new_values as $field => $value ) {
+			if ( 'stock' === $field ) {
+				if ( $product->managing_stock() ) {
+					$product->set_stock_quantity( $value );
+				}
+			} elseif ( 'regular_price' === $field ) {
+				$product->set_regular_price( $value );
+			} elseif ( 'sale_price' === $field ) {
+				$product->set_sale_price( '' === $value ? '' : $value );
+			}
+		}
+	}
+
+	/**
+	 * Finalize an applied run: total the counts, mark applied, and release the lock.
+	 *
+	 * @param int $run_id Run ID.
+	 * @return void
+	 */
+	private function finalize_applied( $run_id ) {
+		$counts = $this->count_rows( $run_id );
+
+		$this->set_status(
+			$run_id,
+			'applied',
+			array(
+				'rows_planned' => $counts['planned'],
+				'rows_applied' => $counts['applied'],
+				'rows_skipped' => $counts['skipped'],
+				'rows_failed'  => $counts['failed'] + $counts['apply_failed'],
+				'finished_at'  => current_time( 'mysql', true ),
+			)
+		);
+
+		$this->release_lock( $run_id );
+
+		wss_log(
+			'Run applied.',
+			array(
+				'run_id' => (int) $run_id,
+				'counts' => $counts,
+			),
+			'info'
+		);
 	}
 
 	/**
