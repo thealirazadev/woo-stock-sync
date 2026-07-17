@@ -255,7 +255,16 @@ class WSS_Admin {
 		$this->render_fetch_button();
 		echo '<hr class="wp-header-end" />';
 		self::render_tabs( 'runs' );
-		echo '<p class="wss-empty">' . esc_html__( 'No sync runs yet. Configure a feed in Settings, then Fetch and preview.', 'woo-stock-sync' ) . '</p>';
+
+		require_once WSS_PATH . 'includes/class-wss-runs-table.php';
+		$table = new WSS_Runs_Table();
+		$table->prepare_items();
+
+		echo '<form method="get">';
+		echo '<input type="hidden" name="page" value="' . esc_attr( self::PAGE ) . '" />';
+		$table->display();
+		echo '</form>';
+
 		echo '</div>';
 	}
 
