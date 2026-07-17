@@ -91,3 +91,36 @@ function wss_uploads_dir() {
 
 	return trailingslashit( $uploads['basedir'] ) . 'wss-feeds';
 }
+
+/**
+ * Fetch a single run row by ID.
+ *
+ * @param int $run_id Run ID.
+ * @return object|null Run row object, or null when not found.
+ */
+function wss_get_run( $run_id ) {
+	global $wpdb;
+
+	$run_id = absint( $run_id );
+	if ( ! $run_id ) {
+		return null;
+	}
+
+	$run = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wpdb->prefix}wss_runs WHERE id = %d", $run_id ) );
+
+	return $run ? $run : null;
+}
+
+/**
+ * Format a run's source for display without leaking server file paths.
+ *
+ * @param object $run Run row.
+ * @return string Human-safe source description.
+ */
+function wss_format_source( $run ) {
+	if ( 'url' === $run->source_type ) {
+		return (string) $run->source_ref;
+	}
+
+	return '' !== $run->source_ref ? basename( $run->source_ref ) : '';
+}
