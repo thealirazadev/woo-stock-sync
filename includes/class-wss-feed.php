@@ -158,4 +158,120 @@ class WSS_Feed {
 
 		return 'csv';
 	}
+
+	/**
+	 * List the feed's column names (CSV header row or first JSON object's keys).
+	 *
+	 * @param array  $settings     Plugin settings.
+	 * @param string $override_url Optional URL override.
+	 * @return array|WP_Error Array of column names, or WP_Error on failure.
+	 */
+	public function list_columns( array $settings, $override_url = '' ) {
+		$source = $this->resolve_source( $settings, $override_url );
+		if ( is_wp_error( $source ) ) {
+			return $source;
+		}
+
+		$columns = ( 'json' === $source['format'] )
+			? $this->json_columns( $source['path'] )
+			: $this->csv_columns( $source['path'] );
+
+		if ( $source['temp'] && file_exists( $source['path'] ) ) {
+			wp_delete_file( $source['path'] );
+		}
+
+		return $columns;
+	}
+
+	/**
+	 * Read the header row of a CSV feed.
+	 *
+	 * @param string $path File path.
+	 * @return array|WP_Error Column names or WP_Error.
+	 */
+	private function csv_columns( $path ) {
+		$handle = fopen( $path, 'rb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- streaming reader.
+		if ( ! $handle ) {
+			return new WP_Error( 'fetch_failed', __( 'The feed file could not be opened.', 'woo-stock-sync' ) );
+		}
+
+		$header = fgetcsv( $handle );
+		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- streaming reader.
+
+		if ( ! is_array( $header ) ) {
+			return new WP_Error( 'empty_feed', __( 'The feed file has no header row.', 'woo-stock-sync' ) );
+		}
+
+		return $this->clean_header( $header );
+	}
+
+	/**
+	 * Read the keys of the first object in a JSON feed.
+	 *
+	 * @param string $path File path.
+	 * @return array|WP_Error Column names or WP_Error.
+	 */
+	private function json_columns( $path ) {
+		$data = $this->decode_json_file( $path );
+		if ( is_wp_error( $data ) ) {
+			return $data;
+		}
+
+		$first = reset( $data );
+		if ( ! is_array( $first ) ) {
+			return new WP_Error( 'fetch_failed', __( 'The JSON feed must be a flat array of objects.', 'woo-stock-sync' ) );
+		}
+
+		return $this->clean_header( array_keys( $first ) );
+	}
+
+	/**
+	 * Decode a JSON feed file into an array of rows, under the size cap.
+	 *
+	 * @param string $path File path.
+	 * @return array|WP_Error Decoded rows or WP_Error.
+	 */
+	private function decode_json_file( $path ) {
+		$max = (int) apply_filters( 'wss_json_max_bytes', WSS_JSON_MAX_BYTES );
+		if ( filesize( $path ) > $max ) {
+			return new WP_Error( 'fetch_failed', __( 'The JSON feed is larger than the supported size. Use a CSV feed for very large catalogs.', 'woo-stock-sync' ) );
+		}
+
+		$raw = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- local file; JSON has no streaming decoder.
+		if ( false === $raw ) {
+			return new WP_Error( 'fetch_failed', __( 'The feed file could not be read.', 'woo-stock-sync' ) );
+		}
+
+		$data = json_decode( $raw, true );
+		if ( ! is_array( $data ) || JSON_ERROR_NONE !== json_last_error() ) {
+			return new WP_Error( 'fetch_failed', __( 'The JSON feed could not be parsed. It must be a flat array of objects.', 'woo-stock-sync' ) );
+		}
+
+		if ( empty( $data ) ) {
+			return new WP_Error( 'empty_feed', __( 'The JSON feed is empty.', 'woo-stock-sync' ) );
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Normalize a header/key list: strip the UTF-8 BOM, trim, and drop empty names.
+	 *
+	 * @param array $header Raw header cells or keys.
+	 * @return array Cleaned, unique column names.
+	 */
+	private function clean_header( array $header ) {
+		$columns = array();
+		foreach ( $header as $index => $name ) {
+			$name = trim( (string) $name );
+			if ( 0 === $index ) {
+				$name = preg_replace( '/^\xEF\xBB\xBF/', '', $name );
+			}
+			if ( '' !== $name ) {
+				$columns[] = $name;
+			}
+		}
+
+		return array_values( array_unique( $columns ) );
+	}
 }
