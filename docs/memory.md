@@ -10,7 +10,25 @@ in the Decisions log with its reason.
 
 ## In progress
 
-- Phase 4: WP-CLI commands.
+- None. All five phases complete.
+
+## Phase 4 (complete)
+
+- WP-CLI `wp wss` commands: fetch (with `--source` override), dry-run (`--run`/`--status`/`--format`),
+  apply (`--run`/`--yes`), rollback (`--yes`), runs (`--format`). Commands drive the same runner
+  methods synchronously (batch guards make the leftover Action Scheduler enqueues no-ops); run-level
+  failures exit 1 via WP_CLI::error, row-level failures are reported in counts (exit 0). Verification:
+  `phpcs` clean; CLI callbacks tested with WP_CLI stubs (integration, skip under stubs).
+
+## Phase 5 (complete)
+
+- All user-facing admin strings wrapped in the `woo-stock-sync` text domain (verified by make-pot,
+  169 strings; CLI output stays fixed English per docs/api-contracts.md). `languages/woo-stock-sync.pot`
+  regenerated. Accessibility: settings error summary receives focus after a failed save; progress
+  region is role=status/aria-live; confirmations disable their button on submit. `WSS_Install::uninstall()`
+  (called by uninstall.php) drops the three tables, deletes the options and `_wss_locked` meta, removes
+  the uploads subdir via WP_Filesystem, and unschedules all wss actions. Verification: `phpcs` clean;
+  `phpunit` 27 tests / 57 assertions (13 pure-logic run live, 14 integration skip without the WP suite).
 
 ## Phase 3 (complete)
 
