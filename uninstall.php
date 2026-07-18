@@ -6,3 +6,8 @@
  */
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
+
+require_once __DIR__ . '/includes/wss-functions.php';
+require_once __DIR__ . '/includes/class-wss-install.php';
+
+WSS_Install::uninstall();

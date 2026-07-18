@@ -56,6 +56,59 @@ class WSS_Install {
 	}
 
 	/**
+	 * Remove everything the plugin created: tables, options, lock meta, uploaded feeds, and jobs.
+	 *
+	 * @return void
+	 */
+	public static function uninstall() {
+		global $wpdb;
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange -- dropping the plugin's own tables on uninstall.
+		$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}wss_snapshots`" );
+		$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}wss_rows`" );
+		$wpdb->query( "DROP TABLE IF EXISTS `{$wpdb->prefix}wss_runs`" );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.SchemaChange
+
+		delete_option( 'wss_settings' );
+		delete_option( 'wss_db_version' );
+		delete_option( 'wss_active_run' );
+
+		delete_post_meta_by_key( '_wss_locked' );
+
+		self::delete_uploads_dir();
+
+		if ( function_exists( 'as_unschedule_all_actions' ) ) {
+			$hooks = array( 'wss_fetch_run', 'wss_diff_batch', 'wss_apply_batch', 'wss_rollback_batch', 'wss_scheduled_fetch' );
+			foreach ( $hooks as $hook ) {
+				as_unschedule_all_actions( $hook, array(), 'woo-stock-sync' );
+			}
+		}
+	}
+
+	/**
+	 * Delete the protected uploads subdirectory and any feed files in it.
+	 *
+	 * @return void
+	 */
+	private static function delete_uploads_dir() {
+		if ( ! function_exists( 'wss_uploads_dir' ) ) {
+			return;
+		}
+
+		$dir = wss_uploads_dir();
+
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		if ( false === WP_Filesystem() ) {
+			return;
+		}
+
+		global $wp_filesystem;
+		if ( $wp_filesystem && $wp_filesystem->is_dir( $dir ) ) {
+			$wp_filesystem->delete( $dir, true );
+		}
+	}
+
+	/**
 	 * Create the runs, rows, and snapshots tables via dbDelta.
 	 *
 	 * @return void
