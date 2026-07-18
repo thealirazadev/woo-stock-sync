@@ -58,3 +58,7 @@ if ( $wss_has_wp_suite ) {
 }
 
 require __DIR__ . '/support/class-wss-integration-testcase.php';
+
+// CLI command tests: load WP_CLI stubs and the command class (the plugin only loads it under WP-CLI).
+require_once __DIR__ . '/support/wp-cli-stubs.php';
+require_once dirname( __DIR__ ) . '/includes/class-wss-cli.php';
