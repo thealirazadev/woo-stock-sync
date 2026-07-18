@@ -77,6 +77,12 @@
 	}
 
 	ready( function () {
+		// Move focus to the settings error summary after a failed save.
+		var errorSummary = document.getElementById( 'wss-error-summary' );
+		if ( errorSummary && typeof errorSummary.focus === 'function' ) {
+			errorSummary.focus();
+		}
+
 		// Confirmation dialogs for destructive-ish actions (apply, roll back, release lock).
 		var confirmForms = document.querySelectorAll( 'form[data-wss-confirm]' );
 		Array.prototype.forEach.call( confirmForms, function ( form ) {
