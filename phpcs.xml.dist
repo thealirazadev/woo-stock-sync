@@ -8,6 +8,8 @@
 	<exclude-pattern>/node_modules/*</exclude-pattern>
 	<exclude-pattern>/build/*</exclude-pattern>
 	<exclude-pattern>/tests/fixtures/*</exclude-pattern>
+	<!-- Test scaffolding deliberately redefines core WP/WC functions; not shipped (see .distignore). -->
+	<exclude-pattern>/tests/support/*</exclude-pattern>
 
 	<arg name="extensions" value="php"/>
 	<arg name="colors"/>
@@ -39,17 +41,47 @@
 		</properties>
 	</rule>
 
+	<rule ref="WordPress.WP.Capabilities">
+		<properties>
+			<property name="custom_capabilities" type="array">
+				<element value="manage_woocommerce"/>
+			</property>
+		</properties>
+	</rule>
+
 	<rule ref="WordPress.WP.DeprecatedFunctions">
 		<properties>
 			<property name="minimum_wp_version" value="6.0"/>
 		</properties>
 	</rule>
 
-	<!-- Tests may use looser documentation and direct DB calls against the test suite. -->
+	<!-- Tests follow PHPUnit conventions, not plugin file/class naming, and do real file I/O. -->
 	<rule ref="Squiz.Commenting.FunctionComment.Missing">
 		<exclude-pattern>/tests/*</exclude-pattern>
 	</rule>
 	<rule ref="WordPress.DB.DirectDatabaseQuery">
 		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+
+	<!--
+		The plugin owns dedicated custom tables (runs, rows, snapshots); direct $wpdb access to
+		them is the documented design (see docs/architecture.md). Prepared-SQL sniffs stay fully
+		enforced; the direct-query and object-cache notices do not apply to a purpose-built,
+		frequently-mutated audit log.
+	-->
+	<rule ref="WordPress.DB.DirectDatabaseQuery.DirectQuery">
+		<exclude-pattern>/includes/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.DB.DirectDatabaseQuery.NoCaching">
+		<exclude-pattern>/includes/*</exclude-pattern>
 	</rule>
 </ruleset>

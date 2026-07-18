@@ -1,0 +1,169 @@
+<?php
+/**
+ * Minimal WordPress/WooCommerce function and class stubs.
+ *
+ * Loaded only when the full WordPress test suite is unavailable, so the pure-logic unit tests
+ * (feed parsing, validation, mapping) can run standalone. Integration tests self-skip in this mode.
+ *
+ * @package WooStockSync
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', sys_get_temp_dir() . '/' );
+}
+if ( ! defined( 'WSS_ROW_CAP' ) ) {
+	define( 'WSS_ROW_CAP', 50000 );
+}
+if ( ! defined( 'WSS_JSON_MAX_BYTES' ) ) {
+	define( 'WSS_JSON_MAX_BYTES', 20 * 1024 * 1024 );
+}
+if ( ! defined( 'WSS_DEFAULT_BATCH_SIZE' ) ) {
+	define( 'WSS_DEFAULT_BATCH_SIZE', 25 );
+}
+if ( ! defined( 'MINUTE_IN_SECONDS' ) ) {
+	define( 'MINUTE_IN_SECONDS', 60 );
+}
+
+if ( ! class_exists( 'WP_Error' ) ) {
+	/**
+	 * Very small WP_Error stand-in.
+	 */
+	class WP_Error {
+		/** @var string */
+		public $error_code;
+		/** @var string */
+		public $error_message;
+
+		/**
+		 * @param string $code    Error code.
+		 * @param string $message Error message.
+		 */
+		public function __construct( $code = '', $message = '' ) {
+			$this->error_code    = $code;
+			$this->error_message = $message;
+		}
+
+		/** @return string */
+		public function get_error_code() {
+			return $this->error_code;
+		}
+
+		/** @return string */
+		public function get_error_message() {
+			return $this->error_message;
+		}
+	}
+}
+
+if ( ! function_exists( 'is_wp_error' ) ) {
+	function is_wp_error( $thing ) {
+		return $thing instanceof WP_Error;
+	}
+}
+if ( ! function_exists( '__' ) ) {
+	function __( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+if ( ! function_exists( 'esc_html__' ) ) {
+	function esc_html__( $text, $domain = 'default' ) {
+		unset( $domain );
+		return $text;
+	}
+}
+if ( ! isset( $GLOBALS['wss_stub_filters'] ) ) {
+	$GLOBALS['wss_stub_filters'] = array();
+}
+if ( ! function_exists( 'add_filter' ) ) {
+	function add_filter( $tag, $callback, $priority = 10, $accepted_args = 1 ) {
+		unset( $priority, $accepted_args );
+		$GLOBALS['wss_stub_filters'][ $tag ][] = $callback;
+		return true;
+	}
+}
+if ( ! function_exists( 'remove_all_filters' ) ) {
+	function remove_all_filters( $tag ) {
+		$GLOBALS['wss_stub_filters'][ $tag ] = array();
+		return true;
+	}
+}
+if ( ! function_exists( 'apply_filters' ) ) {
+	function apply_filters( $tag, $value ) {
+		$args = array_slice( func_get_args(), 1 );
+		if ( ! empty( $GLOBALS['wss_stub_filters'][ $tag ] ) ) {
+			foreach ( $GLOBALS['wss_stub_filters'][ $tag ] as $callback ) {
+				$args[0] = call_user_func_array( $callback, $args );
+			}
+		}
+		return $args[0];
+	}
+}
+if ( ! function_exists( 'number_format_i18n' ) ) {
+	function number_format_i18n( $number ) {
+		return number_format( (float) $number );
+	}
+}
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	function wp_parse_url( $url, $component = -1 ) {
+		return parse_url( $url, $component );
+	}
+}
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	function wp_json_encode( $data ) {
+		return wp_json_encode_stub( $data );
+	}
+}
+if ( ! function_exists( 'wp_json_encode_stub' ) ) {
+	function wp_json_encode_stub( $data ) {
+		return json_encode( $data );
+	}
+}
+if ( ! function_exists( 'wp_delete_file' ) ) {
+	function wp_delete_file( $file ) {
+		if ( is_file( $file ) ) {
+			unlink( $file );
+		}
+	}
+}
+if ( ! function_exists( 'trailingslashit' ) ) {
+	function trailingslashit( $string ) {
+		return rtrim( $string, '/\\' ) . '/';
+	}
+}
+if ( ! function_exists( 'add_action' ) ) {
+	function add_action( $tag, $callback, $priority = 10, $accepted_args = 1 ) {
+		unset( $tag, $callback, $priority, $accepted_args );
+		return true;
+	}
+}
+if ( ! function_exists( 'current_time' ) ) {
+	function current_time( $type, $gmt = 0 ) {
+		unset( $type, $gmt );
+		return gmdate( 'Y-m-d H:i:s' );
+	}
+}
+if ( ! isset( $GLOBALS['wss_stub_options'] ) ) {
+	$GLOBALS['wss_stub_options'] = array();
+}
+if ( ! function_exists( 'add_option' ) ) {
+	function add_option( $name, $value = '', $deprecated = '', $autoload = 'yes' ) {
+		unset( $deprecated, $autoload );
+		if ( array_key_exists( $name, $GLOBALS['wss_stub_options'] ) ) {
+			return false;
+		}
+		$GLOBALS['wss_stub_options'][ $name ] = $value;
+		return true;
+	}
+}
+if ( ! function_exists( 'get_option' ) ) {
+	function get_option( $name, $default_value = false ) {
+		return array_key_exists( $name, $GLOBALS['wss_stub_options'] ) ? $GLOBALS['wss_stub_options'][ $name ] : $default_value;
+	}
+}
+if ( ! function_exists( 'delete_option' ) ) {
+	function delete_option( $name ) {
+		unset( $GLOBALS['wss_stub_options'][ $name ] );
+		return true;
+	}
+}

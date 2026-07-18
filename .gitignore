@@ -8,3 +8,4 @@ composer.phar
 /build/
 /dist/
 *.zip
+.phpunit.result.cache

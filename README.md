@@ -7,9 +7,9 @@ through Action Scheduler, and can roll back the last applied sync from stored pr
 run, row result, and rollback is recorded in custom audit tables, and the same actions are available
 from WP-CLI.
 
-Status: planning — docs under review
+Status: implemented (v1.0.0)
 
-## Planned stack
+## Stack
 
 - PHP 7.4+ WordPress plugin (procedural bootstrap + small single-responsibility classes).
 - WordPress 6.0+ and WooCommerce 7.0+; product writes go through WooCommerce CRUD APIs only.
@@ -21,15 +21,45 @@ Status: planning — docs under review
 
 ## Install
 
-TBD until implementation starts.
+1. Copy the plugin folder to `wp-content/plugins/woo-stock-sync` (or install the built zip through
+   the Plugins screen). WooCommerce must be active first.
+2. Activate it, then open WooCommerce > Stock Sync > Settings to configure a feed source and mapping.
+
+For development:
+
+```
+composer install
+```
 
 ## Run
 
-TBD until implementation starts.
+Use WooCommerce > Stock Sync in the admin, or the WP-CLI commands:
+
+```
+wp wss fetch [--source=<url>]        # create a run, fetch, stage, and diff
+wp wss dry-run [--run=<id>] [--status=<status>] [--format=table|json]
+wp wss apply --run=<id> [--yes]      # apply (or resume) a previewed run
+wp wss rollback [--yes]              # roll back the most recent applied run
+wp wss runs [--format=table|json]    # list run history
+```
 
 ## Test
 
-TBD until implementation starts.
+```
+composer run lint                    # PHP_CodeSniffer (WordPress standard)
+composer run test                    # PHPUnit
+```
+
+Pure-logic tests (feed parsing/validation, the sync lock) run standalone. Integration tests need the
+WordPress test suite plus WooCommerce; install it once with
+`bin/install-wp-tests.sh wordpress_test root '' localhost latest` (or run the suite under
+`wp-env`), and they self-skip otherwise.
+
+## Build
+
+```
+composer run build                   # wp dist-archive -> build/woo-stock-sync.zip
+```
 
 ## Documentation
 

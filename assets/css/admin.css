@@ -1,1 +1,114 @@
 /* Woo Stock Sync admin styles. Styles only what WP admin core does not provide. */
+
+.wss-fetch-form {
+	display: inline-block;
+	margin-left: 8px;
+}
+
+/* Status badges. Colour is never the only signal; the status word is always printed. */
+.wss-badge {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 3px;
+	font-size: 12px;
+	line-height: 1.6;
+	white-space: nowrap;
+}
+
+.wss-badge-success {
+	background: #edfaef;
+	color: #005c12;
+}
+
+.wss-badge-neutral {
+	background: #f0f0f1;
+	color: #3c434a;
+}
+
+.wss-badge-attention {
+	background: #fcf9e8;
+	color: #674600;
+}
+
+.wss-badge-error {
+	background: #fcf0f1;
+	color: #8a1f11;
+}
+
+.wss-reason {
+	color: #646970;
+	font-family: Consolas, Monaco, monospace;
+	font-size: 11px;
+}
+
+.wss-field-error {
+	color: #8a1f11;
+	margin: 4px 0 0;
+}
+
+.wss-run-summary {
+	margin: 16px 0 24px;
+}
+
+.wss-run-meta {
+	max-width: 640px;
+	margin: 8px 0 16px;
+}
+
+.wss-mapping-snapshot {
+	margin: 8px 0 16px;
+}
+
+.wss-mapping-snapshot ul {
+	margin: 8px 0 0 16px;
+}
+
+/* Align numeric diff and count columns. */
+.wss-counts,
+.column-planned,
+.column-skipped,
+.column-failed,
+.column-applied,
+.column-current,
+.column-new {
+	font-variant-numeric: tabular-nums;
+}
+
+.wss-progress-note {
+	margin: 8px 0 16px;
+}
+
+.wss-progress {
+	margin: 8px 0 16px;
+	max-width: 640px;
+}
+
+.wss-progress-bar {
+	background: #f0f0f1;
+	border-radius: 3px;
+	height: 16px;
+	overflow: hidden;
+}
+
+.wss-progress-fill {
+	display: block;
+	height: 100%;
+	width: 0;
+	background: currentColor;
+	transition: width 0.3s ease;
+}
+
+.wss-progress-text {
+	font-variant-numeric: tabular-nums;
+	margin: 4px 0 0;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.wss-progress-fill {
+		transition: none;
+	}
+}
+
+.wss-load-status {
+	margin-left: 8px;
+}
