@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-18T00:05:29+00:00\n"
+"POT-Creation-Date: 2026-07-18T00:06:37+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: woo-stock-sync\n"
@@ -472,7 +472,6 @@ msgid "Rolling back"
 msgstr ""
 
 #: includes/wss-functions.php:174
-#: includes/wss-functions.php:182
 msgid "Rolled back"
 msgstr ""
 
@@ -488,15 +487,15 @@ msgstr ""
 msgid "Apply failed"
 msgstr ""
 
-#: includes/wss-functions.php:183
+#: includes/wss-functions.php:182
 msgid "Rollback failed"
 msgstr ""
 
-#: includes/wss-functions.php:184
+#: includes/wss-functions.php:183
 msgid "Locked"
 msgstr ""
 
-#: includes/wss-functions.php:185
+#: includes/wss-functions.php:184
 msgid "Stalled"
 msgstr ""
 

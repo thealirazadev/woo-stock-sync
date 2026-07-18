@@ -179,7 +179,6 @@ function wss_status_label( $status ) {
 		'no_change'       => __( 'No change', 'woo-stock-sync' ),
 		'skipped'         => __( 'Skipped', 'woo-stock-sync' ),
 		'apply_failed'    => __( 'Apply failed', 'woo-stock-sync' ),
-		'rolled_back_row' => __( 'Rolled back', 'woo-stock-sync' ),
 		'rollback_failed' => __( 'Rollback failed', 'woo-stock-sync' ),
 		'locked'          => __( 'Locked', 'woo-stock-sync' ),
 		'stalled'         => __( 'Stalled', 'woo-stock-sync' ),
