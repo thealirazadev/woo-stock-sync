@@ -498,7 +498,28 @@ class WSS_Runner {
 		);
 
 		foreach ( (array) $rows as $row ) {
-			$this->diff_row( $row );
+			// Isolate per-row failures: a product whose CRUD read throws (a hook from another
+			// plugin, a corrupt product) must not abort the batch and strand the run in 'diffing'
+			// with no pending action. Mirror the apply/rollback try/catch so the cursor advances.
+			try {
+				$this->diff_row( $row );
+			} catch ( \Throwable $error ) {
+				wss_log(
+					'Diff failed for a row.',
+					array(
+						'row_id' => (int) $row->id,
+						'error'  => $error->getMessage(),
+					)
+				);
+				$this->update_row(
+					$row->id,
+					array(
+						'status'  => 'failed',
+						'reason'  => 'wc_error',
+						'message' => $error->getMessage(),
+					)
+				);
+			}
 		}
 
 		$remaining = (int) $wpdb->get_var(

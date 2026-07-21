@@ -39,6 +39,7 @@ class Test_Diff extends WSS_Integration_TestCase {
 			}
 		}
 		$this->tmp = array();
+		remove_all_filters( 'woocommerce_product_get_stock_quantity' );
 		parent::tear_down();
 	}
 
@@ -154,6 +155,42 @@ class Test_Diff extends WSS_Integration_TestCase {
 		$this->assertSame( 'skipped', $rows['D-UNKNOWN']->status );
 		$this->assertSame( 'unknown_sku', $rows['D-UNKNOWN']->reason );
 		$this->assertSame( 1, (int) $run->rows_planned );
+	}
+
+	public function test_a_throwing_product_is_isolated_and_the_preview_completes() {
+		$this->make_product( 'D-GOOD', 5, '20.00' );
+		$boom_id = $this->make_product( 'D-BOOM', 5, '20.00' );
+
+		// A third-party hook that throws while the diff reads a product's stock (view context).
+		add_filter(
+			'woocommerce_product_get_stock_quantity',
+			static function ( $qty, $product ) use ( $boom_id ) {
+				if ( (int) $product->get_id() === (int) $boom_id ) {
+					throw new RuntimeException( 'boom' );
+				}
+				return $qty;
+			},
+			10,
+			2
+		);
+
+		$mapping = array(
+			'sku'           => 'sku',
+			'stock'         => 'qty',
+			'regular_price' => 'price',
+			'sale_price'    => '',
+		);
+
+		$run_id = $this->run_diff( "sku,qty,price\nD-GOOD,12,25.00\nD-BOOM,12,25.00\n", $mapping );
+		$run    = wss_get_run( $run_id );
+		$rows   = $this->rows_by_sku( $run_id );
+
+		// Before per-row isolation the thrown error aborted the batch and the run never left
+		// 'diffing'; the good row and the completed preview prove the batch recovered.
+		$this->assertSame( 'previewed', $run->status );
+		$this->assertSame( 'planned', $rows['D-GOOD']->status );
+		$this->assertSame( 'failed', $rows['D-BOOM']->status );
+		$this->assertSame( 'wc_error', $rows['D-BOOM']->reason );
 	}
 
 	public function test_stock_not_managed_when_stock_only() {
