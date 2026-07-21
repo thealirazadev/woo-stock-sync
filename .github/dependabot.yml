@@ -1,0 +1,16 @@
+version: 2
+
+updates:
+  # Dev-only Composer tooling (phpcs, wpcs, phpunit). Versions are pinned exactly and the lockfile is
+  # committed, so updates arrive as one grouped PR per month for review rather than a rolling stream.
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    groups:
+      composer-dependencies:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: "chore"
