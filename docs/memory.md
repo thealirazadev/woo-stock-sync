@@ -116,3 +116,12 @@ in the Decisions log with its reason.
 - 2026-07-22 - `bin/*` is excluded from phpcs: the benchmark scripts are standalone procedural PHP
   CLI tooling that is not shipped (already in `.distignore`), matching the existing `tests/support`
   exclusion.
+- 2026-07-22 - Security dependency pass. One open Dependabot alert on the repo, confirmed against
+  `composer audit`: `phpunit/phpunit` 9.6.19 -> 9.6.33 (high, GHSA-vvj3-c3rp-c85p / CVE-2026-24765,
+  unsafe deserialization in PHPT code-coverage handling). Dev-only dependency, and the project runs
+  no PHPT fixtures, so exposure was limited to a maliciously crafted test file already in the tree;
+  bumped anyway. Patch-level bump inside 9.6, so no breakage: phpcs, `php -l` over all non-vendor
+  PHP, and the 29-test suite all pass unchanged. `composer audit` now reports no advisories.
+  No runtime dependencies exist (the plugin requires only PHP >= 7.4), so nothing shipped changed.
+  `docs/architecture.md` names `phpunit/phpunit` but pins no version, so no doc update was needed.
+  Dependabot PR #2 is superseded by this commit and can be closed.
