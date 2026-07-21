@@ -13,3 +13,4 @@
 /phpcs.xml.dist
 /phpunit.xml.dist
 /README.md
+/SECURITY.md
