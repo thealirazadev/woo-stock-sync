@@ -25,9 +25,15 @@ if ( $wss_has_wp_suite ) {
 	 * @return void
 	 */
 	function wss_manually_load_plugins() {
-		$plugin_dir = dirname( __DIR__, 2 );
+		// WC_PLUGIN_PATH points at a WooCommerce checkout anywhere on disk; without it WooCommerce
+		// is expected next to this plugin, the way a wp-content/plugins directory lays it out.
+		$woocommerce = getenv( 'WC_PLUGIN_PATH' );
+		if ( $woocommerce ) {
+			$woocommerce = rtrim( $woocommerce, '/\\' ) . '/woocommerce.php';
+		} else {
+			$woocommerce = dirname( __DIR__, 2 ) . '/woocommerce/woocommerce.php';
+		}
 
-		$woocommerce = $plugin_dir . '/woocommerce/woocommerce.php';
 		if ( file_exists( $woocommerce ) ) {
 			require $woocommerce;
 		}
