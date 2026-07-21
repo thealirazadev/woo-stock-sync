@@ -249,6 +249,34 @@ class Test_Feed_Parsing extends \PHPUnit\Framework\TestCase {
 		$this->assertSame( 'too_large', $result->get_error_code() );
 	}
 
+	public function test_format_detection_of_a_url_without_a_path_is_deprecation_free() {
+		// Remote feeds land in a wp_tempnam() ".tmp" file, so detection always falls through to the
+		// URL hint. A supplier URL with no path made pathinfo() receive null on every fetch.
+		$path = $this->write_tmp( "sku,qty,price,sale_price\nA,1,1,\n", 'tmp' );
+
+		$deprecations = array();
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- the assertion is that no deprecation is raised; restored in finally.
+		set_error_handler(
+			static function ( $errno, $errstr ) use ( &$deprecations ) {
+				unset( $errno );
+				$deprecations[] = $errstr;
+				return true;
+			},
+			E_DEPRECATED
+		);
+
+		try {
+			$method = new ReflectionMethod( 'WSS_Feed', 'detect_format' );
+			$method->setAccessible( true );
+			$format = $method->invoke( null, $path, 'https://example.com' );
+		} finally {
+			restore_error_handler();
+		}
+
+		$this->assertSame( array(), $deprecations, 'format detection must not emit deprecations' );
+		$this->assertSame( 'csv', $format );
+	}
+
 	public function test_json_feed_parsing() {
 		$json                  = wp_json_encode(
 			array(

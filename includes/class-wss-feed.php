@@ -153,7 +153,9 @@ class WSS_Feed {
 		}
 
 		if ( '' !== $hint ) {
-			$hint_ext = strtolower( pathinfo( wp_parse_url( $hint, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+			// wp_parse_url() returns null for a URL with no path (https://example.com); casting keeps
+			// pathinfo() off the PHP 8.1+ "passing null" deprecation on every remote fetch.
+			$hint_ext = strtolower( pathinfo( (string) wp_parse_url( $hint, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
 			if ( 'json' === $hint_ext || 'csv' === $hint_ext ) {
 				return $hint_ext;
 			}
