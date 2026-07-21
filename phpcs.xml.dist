@@ -10,6 +10,8 @@
 	<exclude-pattern>/tests/fixtures/*</exclude-pattern>
 	<!-- Test scaffolding deliberately redefines core WP/WC functions; not shipped (see .distignore). -->
 	<exclude-pattern>/tests/support/*</exclude-pattern>
+	<!-- Dev-only benchmarking scripts: standalone PHP CLI, not shipped (see .distignore). -->
+	<exclude-pattern>/bin/*</exclude-pattern>
 
 	<arg name="extensions" value="php"/>
 	<arg name="colors"/>
