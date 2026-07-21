@@ -23,6 +23,15 @@ class Test_Lock extends \PHPUnit\Framework\TestCase {
 		parent::setUp();
 		$GLOBALS['wss_stub_options'] = array();
 		$this->runner                = new WSS_Runner();
+
+		// Under the WordPress test suite the lock is a real option and this case is not wrapped in
+		// the WP_UnitTestCase transaction, so clearing the stub array alone leaves it set.
+		$this->runner->force_release_lock();
+	}
+
+	protected function tearDown(): void {
+		$this->runner->force_release_lock();
+		parent::tearDown();
 	}
 
 	public function test_acquire_is_exclusive_and_reentrant() {
