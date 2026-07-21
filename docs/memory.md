@@ -21,6 +21,21 @@ in the Decisions log with its reason.
   README badges + a Design decisions section, standalone parser benchmark tooling in `bin/`,
   `SECURITY.md`, and a grouped monthly Composer `dependabot.yml`.
 
+- 2026-07-22 - The integration suite was executed for the first time, against real WordPress 6.8.2 +
+  WooCommerce 10.6.2 + Action Scheduler. Before: 29 tests collected, 14 executed, 15 skipped (59
+  assertions). After: 29 executed, 0 skipped, 113 assertions, green and repeatable. Two findings:
+  1. `tests/test-diff.php::test_a_throwing_product_is_isolated_and_the_preview_completes` (written
+     with the diff-isolation fix but never run) was verified both ways: with the fix it passes; with
+     the fix reverted the `RuntimeException` escapes `handle_diff_batch()` and the test errors, which
+     is exactly the stranded-run defect. The fix is adequate — the row lands `failed`/`wc_error`,
+     the cursor advances, and `finalize_preview` counts it in `rows_failed`.
+  2. `Test_Lock` failed under the WP suite. Broken test, not a code bug: it is a plain PHPUnit case,
+     so it is outside the `WP_UnitTestCase` transaction, and resetting the stub option array no
+     longer clears a real option — the first test left run 1 holding the lock. Fixed by
+     force-releasing the lock in `setUp`/`tearDown`.
+  `tests/bootstrap.php` now honours `WC_PLUGIN_PATH` so WooCommerce can live anywhere; CI gained an
+  `integration-tests` job and `docs/testing.md` documents the provisioning commands.
+
 ## In progress
 
 - None. All five phases complete.
@@ -101,6 +116,22 @@ in the Decisions log with its reason.
   there (14 of 27). `composer run build` is also out of CI because it needs WP-CLI plus the
   dist-archive package, which are not project dependencies. Full integration coverage stays a
   wp-env / WP-capable-host job, noted in a comment in the workflow.
+- 2026-07-22 - SUPERSEDED: the integration tests do run on a hosted runner, and the claim that they
+  need wp-env was wrong. They need three things wp-env happens to bundle — a WordPress core
+  checkout, the core test library from `wordpress-develop`, and a MySQL/MariaDB server — and all
+  three are a few `curl` calls plus a service container. `ci.yml` now has an `integration-tests` job
+  with a `mariadb:11.4` service that provisions them and runs the full suite; `lint-and-test` keeps
+  running the suite in stub mode so the no-database path stays covered. The provisioning avoids
+  `bin/install-wp-tests.sh` because that script needs `svn` and a `mysqladmin` client, neither of
+  which is guaranteed on the runner image; tarballs need neither.
+- 2026-07-22 - WordPress 6.8.2 + WooCommerce 10.6.2 are pinned in CI (and documented for local runs).
+  10.6.2 is the newest WooCommerce that still declares "Requires at least: 6.8"; 10.8+ requires
+  WordPress 6.9. Pinning both keeps a WooCommerce release from turning CI red on its own schedule.
+- 2026-07-22 - The test database must be MariaDB, not MySQL. `WP_UnitTestCase` rewrites the plugin's
+  `CREATE TABLE` into `CREATE TEMPORARY TABLE`, and `Test_Uninstall` proves the tables exist and are
+  then dropped via `SHOW TABLES LIKE`. MariaDB lists temporary tables in `SHOW TABLES`; MySQL does
+  not, so that test would fail there. wp-env also runs MariaDB, so this is the ordinary setup, but
+  it is a real constraint and not an accident.
 - 2026-07-22 - Root LICENSE is MIT per owner instruction, while the plugin headers, `readme.txt`,
   and `composer.json` still declare GPL-2.0-or-later (required for WordPress.org distribution).
   Flagged rather than changed: those files are source of truth and were not in scope.
