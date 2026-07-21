@@ -7,6 +7,10 @@ in the Decisions log with its reason.
 
 - Repo initialized (git identity Ali Raza / thealirazadev), tooling installed (PHPCS + WPCS 3.1.0,
   PHPUnit 9.6.19, PHPCompatibilityWP), scaffold committed.
+- 2026-07-22 - Root `LICENSE` (MIT, Copyright (c) 2026 Ali Raza) added, and
+  `.github/workflows/ci.yml` added: on push/pull_request to main, PHP 8.2 on ubuntu-latest running
+  `composer install`, `composer run lint` (phpcs), `php -l` over every non-vendor PHP file, and
+  `composer run test` (phpunit). Verified against a clean `git archive` checkout before pushing.
 
 ## In progress
 
@@ -83,3 +87,11 @@ in the Decisions log with its reason.
   `wss_active_run` option lock lands in Phase 2 as documented.
 - 2026-07-18 - Granular commits adopted mid-run per owner instruction: each discrete change (a
   helper, an admin action, a table, a parser branch, a test) is its own working commit.
+- 2026-07-22 - CI deliberately runs only the checks that pass on a stock hosted runner: no MySQL
+  service, no `bin/install-wp-tests.sh`, no wp-env, so the WooCommerce integration tests self-skip
+  there (14 of 27). `composer run build` is also out of CI because it needs WP-CLI plus the
+  dist-archive package, which are not project dependencies. Full integration coverage stays a
+  wp-env / WP-capable-host job, noted in a comment in the workflow.
+- 2026-07-22 - Root LICENSE is MIT per owner instruction, while the plugin headers, `readme.txt`,
+  and `composer.json` still declare GPL-2.0-or-later (required for WordPress.org distribution).
+  Flagged rather than changed: those files are source of truth and were not in scope.
