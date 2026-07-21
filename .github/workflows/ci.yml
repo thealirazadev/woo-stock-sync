@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint and test (PHP 8.2)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Lint (phpcs, WordPress Coding Standards)
+        run: composer run lint
+
+      - name: PHP syntax check
+        run: |
+          set -eo pipefail
+          find . -path ./vendor -prune -o -name '*.php' -print0 | xargs -0 -n1 -P4 php -l
+
+      # WordPress is not loaded on this runner, so the WooCommerce integration tests self-skip and
+      # only the pure-logic tests execute. Run the suite under wp-env (`npx wp-env start`) or any
+      # WP-capable host with the WordPress test suite installed to exercise them fully.
+      - name: Tests (phpunit)
+        run: composer run test
