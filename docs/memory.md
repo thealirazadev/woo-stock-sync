@@ -12,6 +12,15 @@ in the Decisions log with its reason.
   `composer install`, `composer run lint` (phpcs), `php -l` over every non-vendor PHP file, and
   `composer run test` (phpunit). Verified against a clean `git archive` checkout before pushing.
 
+- 2026-07-22 - Senior quality pass. Code review of the batch pipeline found one real defect: the
+  diff batch had no per-row failure isolation, so a product whose WooCommerce read threw aborted the
+  whole batch and (Action Scheduler does not retry a failed action by default) stranded the run in
+  `diffing` with no pending action and no admin Resume path. Fixed by wrapping each row's diff in the
+  same try/catch the apply and rollback batches already use, marking the row `failed` / `wc_error`
+  so the cursor advances; covered by a new integration test in `tests/test-diff.php`. Also added
+  README badges + a Design decisions section, standalone parser benchmark tooling in `bin/`,
+  `SECURITY.md`, and a grouped monthly Composer `dependabot.yml`.
+
 ## In progress
 
 - None. All five phases complete.
@@ -95,3 +104,15 @@ in the Decisions log with its reason.
 - 2026-07-22 - Root LICENSE is MIT per owner instruction, while the plugin headers, `readme.txt`,
   and `composer.json` still declare GPL-2.0-or-later (required for WordPress.org distribution).
   Flagged rather than changed: those files are source of truth and were not in scope.
+- 2026-07-22 - Superseded: the root LICENSE was switched to GPL-2.0 so it matches the plugin header,
+  `readme.txt`, and `composer.json`. The repo is GPL-2.0-or-later throughout; the README license
+  badge reflects that.
+- 2026-07-22 - Parser benchmark measures `WSS_Feed::parse` with a no-op sink (parsing + mapping +
+  validation only, no DB), under the existing pure-logic stubs, so the number is not diluted by
+  product I/O. Peak memory grows with row count because duplicate-SKU detection keeps a seen-SKU set
+  for the run; the 50k row cap bounds it to ~8.5 MB, so the streaming read stays constant-memory but
+  the run as a whole is O(rows) in the dedup set. Recorded because `docs/architecture.md` describes
+  the CSV path as "constant memory regardless of feed size", which is true of the read buffer only.
+- 2026-07-22 - `bin/*` is excluded from phpcs: the benchmark scripts are standalone procedural PHP
+  CLI tooling that is not shipped (already in `.distignore`), matching the existing `tests/support`
+  exclusion.
