@@ -85,10 +85,10 @@ composer run lint                    # PHP_CodeSniffer (WordPress standard)
 composer run test                    # PHPUnit
 ```
 
-Pure-logic tests (feed parsing/validation, the sync lock) run standalone. Integration tests need the
-WordPress test suite plus WooCommerce; install it once with
-`bin/install-wp-tests.sh wordpress_test root '' localhost latest` (or run the suite under
-`wp-env`), and they self-skip otherwise.
+Pure-logic tests (feed parsing/validation, the sync lock) run standalone; the integration tests
+self-skip until WordPress is available. To run the whole suite, point `WP_TESTS_DIR` at a WordPress
+core test library and `WC_PLUGIN_PATH` at a WooCommerce checkout — `docs/testing.md` has the exact
+provisioning commands, and CI runs them on every push. `wp-env` works too but is not required.
 
 ## Benchmark
 
