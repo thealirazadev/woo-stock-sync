@@ -141,6 +141,62 @@ class Test_Apply extends WSS_Integration_TestCase {
 		$this->assertSame( 5.0, (float) wc_get_product( wc_get_product_id_by_sku( 'A-THROW' ) )->get_stock_quantity() );
 	}
 
+	public function test_a_product_deleted_before_apply_is_isolated() {
+		$keep_id = $this->make_product( 'G-KEEP', 5, '10.00' );
+		$gone_id = $this->make_product( 'G-GONE', 5, '10.00' );
+
+		$mapping = array(
+			'sku'           => 'sku',
+			'stock'         => 'qty',
+			'regular_price' => 'price',
+			'sale_price'    => '',
+		);
+		$csv     = "sku,qty,price\nG-KEEP,20,15.00\nG-GONE,20,15.00\n";
+
+		$run_id = $this->stage_and_diff( $csv, $mapping );
+
+		// The product resolved at preview vanishes before apply (deleted in wp-admin).
+		wp_delete_post( $gone_id, true );
+
+		$this->apply_run( $run_id );
+
+		$run  = wss_get_run( $run_id );
+		$rows = $this->rows_by_sku( $run_id );
+
+		$this->assertSame( 'applied', $run->status, 'the batch completes despite the missing product' );
+		$this->assertSame( 'applied', $rows['G-KEEP']->status );
+		$this->assertSame( 'apply_failed', $rows['G-GONE']->status );
+		$this->assertSame( 'wc_error', $rows['G-GONE']->reason );
+		$this->assertSame( 20.0, (float) wc_get_product( $keep_id )->get_stock_quantity() );
+	}
+
+	public function test_a_product_locked_after_preview_is_skipped_at_apply() {
+		$open_id   = $this->make_product( 'G-OPEN', 5, '10.00' );
+		$locked_id = $this->make_product( 'G-LOCK', 5, '10.00' );
+
+		$mapping = array(
+			'sku'           => 'sku',
+			'stock'         => 'qty',
+			'regular_price' => 'price',
+			'sale_price'    => '',
+		);
+		$csv     = "sku,qty,price\nG-OPEN,20,15.00\nG-LOCK,20,15.00\n";
+
+		$run_id = $this->stage_and_diff( $csv, $mapping );
+
+		// Locked between preview and apply: the apply-time re-check must skip it, untouched.
+		update_post_meta( $locked_id, '_wss_locked', 'yes' );
+
+		$this->apply_run( $run_id );
+
+		$rows = $this->rows_by_sku( $run_id );
+		$this->assertSame( 'applied', $rows['G-OPEN']->status );
+		$this->assertSame( 'skipped', $rows['G-LOCK']->status );
+		$this->assertSame( 'locked', $rows['G-LOCK']->reason );
+		$this->assertSame( 5.0, (float) wc_get_product( $locked_id )->get_stock_quantity(), 'locked product untouched' );
+		$this->assertSame( 20.0, (float) wc_get_product( $open_id )->get_stock_quantity() );
+	}
+
 	public function test_snapshot_written_once_and_resume_is_idempotent() {
 		$this->make_product( 'A-1', 5, '10.00' );
 		$this->make_product( 'A-2', 5, '10.00' );
