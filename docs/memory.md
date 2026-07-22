@@ -40,6 +40,38 @@ in the Decisions log with its reason.
 
 - None. All five phases complete.
 
+## 2026-07-23 - Edge-case hardening pass
+
+Genuine follow-up work after the integration suite came online. Before: 29 tests / 113 assertions
+(integration mode). After: 38 tests / 156 assertions, green, and 38 / 19-skipped green in stub mode.
+
+1. Managed-but-null rollback (the review edge). A product managing stock with no quantity set reads
+   back null; `snapshot_product` recorded null, and `rollback_snapshot` guarded on
+   `null !== $prior['stock_quantity']`, so it skipped the restore and left the run's applied value in
+   place. Decision: restore to the managed-but-unset (null) state. Two facts drove the fix. (a) null
+   is ambiguous in the snapshot - it means either "managed but unset" or "not managing stock" - so the
+   snapshot now records a `manages_stock` flag (inside the `prior_values` JSON, no schema change) and
+   rollback keys off it (old snapshots fall back to the prior non-null guard). (b) WooCommerce's
+   `set_stock_quantity( null )` coerces to 0 via `wc_stock_amount()` (`'' !== null` -> `intval(null)`),
+   so restoring the null state passes `''`, which `set_prop`s null. Covered by
+   `Test_Rollback::test_rollback_restores_a_managed_but_unset_stock_quantity` (verified failing first:
+   stock stayed at 50, then null after the fix).
+2. Missing mapped column (CSV). A saved mapping can drift from a feed (a supplier renames a column);
+   the CSV path treated the absent column as a blank cell and staged every row as no-change with no
+   signal. `parse_csv` now fails the run naming the missing columns. JSON deliberately left as is - its
+   objects are legitimately sparse, so the first object's keys are not an authoritative column list.
+3. Feed-format edges: money-formatted values (currency symbol, thousands separator, trailing code,
+   space grouping) are rejected as `invalid_number` not truncated; duplicate SKU keeps the first row;
+   malformed JSON fails the run; a non-object JSON element fails only its own row.
+4. Apply-time isolation for two more reasons: a product deleted between preview and apply lands
+   `apply_failed`/`wc_error` and the batch continues; a product locked after preview is `skipped`/
+   `locked` at the apply-time re-check, values untouched.
+5. WP-CLI: `apply` on a run with row-level failures exits 0 (no `WP_CLI::error`) and reports the
+   failures in its counts, complementing the existing run-level exit-1 cases.
+
+All product writes stayed on WooCommerce CRUD. No schema change (the `manages_stock` flag lives in the
+existing snapshot JSON). No new dependencies. `phpcs`, `php -l`, and both suite modes clean.
+
 ## Phase 4 (complete)
 
 - WP-CLI `wp wss` commands: fetch (with `--source` override), dry-run (`--run`/`--status`/`--format`),
