@@ -277,6 +277,64 @@ class Test_Feed_Parsing extends \PHPUnit\Framework\TestCase {
 		$this->assertSame( 'csv', $format );
 	}
 
+	public function test_currency_and_thousands_separators_are_rejected() {
+		// Supplier feeds often ship money-formatted values. These must be rejected outright, never
+		// silently truncated (a stray comma or symbol turning 1,000 into 1).
+		$path           = $this->write_tmp(
+			"sku,qty,price,sale_price\n"
+			. "A,10,\$9.99,\n"
+			. "B,10,\"1,000\",\n"
+			. "C,10,9.99USD,\n"
+			. "D,\"1 000\",9.99,\n"
+		);
+		list( , $rows ) = $this->parse_file( $path );
+
+		$this->assertSame( 'invalid_number', $rows[0]['reason'], 'currency symbol rejected' );
+		$this->assertSame( 'invalid_number', $rows[1]['reason'], 'thousands separator rejected' );
+		$this->assertSame( 'invalid_number', $rows[2]['reason'], 'trailing currency code rejected' );
+		$this->assertSame( 'invalid_number', $rows[3]['reason'], 'space-grouped quantity rejected' );
+	}
+
+	public function test_duplicate_sku_keeps_the_first_row() {
+		// First occurrence wins: it stages with its own values; later duplicates fail.
+		$path           = $this->write_tmp( "sku,qty,price,sale_price\nDUP,10,19.99,\nDUP,99,29.99,\n" );
+		list( , $rows ) = $this->parse_file( $path );
+
+		$this->assertSame( 'staged', $rows[0]['status'] );
+		$this->assertSame( '10', $rows[0]['new_values']['stock'], 'the first row is the one kept' );
+		$this->assertSame( 'failed', $rows[1]['status'] );
+		$this->assertSame( 'duplicate_sku', $rows[1]['reason'] );
+	}
+
+	public function test_malformed_json_fails_the_run() {
+		$path           = $this->write_tmp( '{ "sku": "J-1", ', 'json' );
+		list( $result ) = $this->parse_file( $path );
+
+		$this->assertTrue( is_wp_error( $result ) );
+		$this->assertSame( 'fetch_failed', $result->get_error_code() );
+	}
+
+	public function test_json_scalar_entry_fails_the_row_without_aborting() {
+		// A non-object element must not fatal the parse; it yields an empty row (missing SKU).
+		$json                  = wp_json_encode(
+			array(
+				array(
+					'sku'   => 'J-OK',
+					'qty'   => 3,
+					'price' => '4.00',
+				),
+				42,
+			)
+		);
+		$path                  = $this->write_tmp( $json, 'json' );
+		list( $result, $rows ) = $this->parse_file( $path );
+
+		$this->assertSame( 2, $result );
+		$this->assertSame( 'staged', $rows[0]['status'] );
+		$this->assertSame( 'failed', $rows[1]['status'] );
+		$this->assertSame( 'missing_sku', $rows[1]['reason'] );
+	}
+
 	public function test_missing_mapped_column_fails_the_run() {
 		// The feed header omits the column the mapping points stock at (qty), so the run must fail
 		// with a clear message instead of silently staging every row as "no change" for stock.
