@@ -365,9 +365,23 @@ class WSS_Feed {
 		}
 
 		$header_map = $this->header_map( $header );
-		$cap        = (int) apply_filters( 'wss_row_cap', WSS_ROW_CAP );
-		$seen       = array();
-		$row_num    = 0;
+
+		$missing = $this->missing_mapped_columns( $mapping, $header_map );
+		if ( ! empty( $missing ) ) {
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- streaming reader.
+			return new WP_Error(
+				'missing_column',
+				sprintf(
+					/* translators: %s: comma-separated list of column names. */
+					__( 'The feed is missing these mapped columns: %s. Check the column mapping in Settings against the feed header.', 'woo-stock-sync' ),
+					implode( ', ', $missing )
+				)
+			);
+		}
+
+		$cap     = (int) apply_filters( 'wss_row_cap', WSS_ROW_CAP );
+		$seen    = array();
+		$row_num = 0;
 
 		// phpcs:ignore Generic.CodeAnalysis.AssignmentInCondition.FoundInWhileCondition -- streaming read.
 		while ( false !== ( $data = fgetcsv( $handle ) ) ) {
@@ -415,6 +429,34 @@ class WSS_Feed {
 		}
 
 		return $map;
+	}
+
+	/**
+	 * Mapped feed columns that are absent from the header.
+	 *
+	 * A saved mapping can drift out of sync with a feed (a supplier renames a column), which would
+	 * otherwise stage every row as "no change" for that field with no signal to the operator. This
+	 * lets the CSV path fail the run with a clear message instead.
+	 *
+	 * @param array $mapping   Column mapping (field => column name).
+	 * @param array $available Column names present in the feed header.
+	 * @return array Missing column names, unique and in mapping order.
+	 */
+	private function missing_mapped_columns( array $mapping, array $available ) {
+		$present = array();
+		foreach ( $available as $name ) {
+			$present[ (string) $name ] = true;
+		}
+
+		$missing = array();
+		foreach ( array( 'sku', 'stock', 'regular_price', 'sale_price' ) as $field ) {
+			$column = isset( $mapping[ $field ] ) ? (string) $mapping[ $field ] : '';
+			if ( '' !== $column && ! isset( $present[ $column ] ) && ! in_array( $column, $missing, true ) ) {
+				$missing[] = $column;
+			}
+		}
+
+		return $missing;
 	}
 
 	/**

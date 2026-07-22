@@ -277,6 +277,17 @@ class Test_Feed_Parsing extends \PHPUnit\Framework\TestCase {
 		$this->assertSame( 'csv', $format );
 	}
 
+	public function test_missing_mapped_column_fails_the_run() {
+		// The feed header omits the column the mapping points stock at (qty), so the run must fail
+		// with a clear message instead of silently staging every row as "no change" for stock.
+		$path           = $this->write_tmp( "sku,price,sale_price\nA,10.00,\n" );
+		list( $result ) = $this->parse_file( $path );
+
+		$this->assertTrue( is_wp_error( $result ) );
+		$this->assertSame( 'missing_column', $result->get_error_code() );
+		$this->assertStringContainsString( 'qty', $result->get_error_message() );
+	}
+
 	public function test_json_feed_parsing() {
 		$json                  = wp_json_encode(
 			array(
