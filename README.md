@@ -14,6 +14,14 @@ from WP-CLI.
 
 Status: implemented (v1.0.0)
 
+## Screenshots
+
+![Dry-run diff preview for a sync run, listing per-field stock and price changes with planned, no-change, skipped (locked and unknown SKU), and failed rows, plus Apply sync and Cancel actions](docs/images/dry-run-diff.png)
+
+![Settings screen showing the remote feed URL, a masked auth header value, the fetch schedule, and the column mapping of feed columns to SKU, stock, regular price, and sale price](docs/images/settings.png)
+
+![Run history table listing previous sync runs with date, trigger, source, status, and planned, skipped, failed, and applied counts](docs/images/run-history.png)
+
 ## Stack
 
 - PHP 7.4+ WordPress plugin (procedural bootstrap + small single-responsibility classes).
