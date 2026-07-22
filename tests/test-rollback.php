@@ -125,6 +125,32 @@ class Test_Rollback extends WSS_Integration_TestCase {
 		$this->assertSame( 'rolled_back', $rows['R-1']->status );
 	}
 
+	public function test_rollback_restores_a_managed_but_unset_stock_quantity() {
+		// A product that manages stock but has no quantity set (managed-but-null). The prior state is
+		// null, and rollback must return it to null, not leave the applied value and not coerce to 0.
+		$product = new WC_Product_Simple();
+		$product->set_sku( 'R-NULL' );
+		$product->set_manage_stock( true );
+		$product->set_regular_price( '10.00' );
+		$id = $product->save();
+
+		$this->assertNull( wc_get_product( $id )->get_stock_quantity(), 'precondition: stock starts unset' );
+
+		$run_id = $this->apply_feed( "sku,qty,price\nR-NULL,50,15.00\n", $this->mapping() );
+
+		$this->assertSame( 50.0, (float) wc_get_product( $id )->get_stock_quantity(), 'apply set the quantity' );
+
+		$this->roll_back( $run_id );
+
+		$this->assertSame( 'rolled_back', wss_get_run( $run_id )->status );
+		$restored = wc_get_product( $id );
+		$this->assertNull( $restored->get_stock_quantity(), 'stock is restored to the managed-but-unset (null) state' );
+		$this->assertSame( '10.00', $restored->get_regular_price() );
+
+		$rows = $this->rows_by_sku( $run_id );
+		$this->assertSame( 'rolled_back', $rows['R-NULL']->status );
+	}
+
 	public function test_deleted_product_is_recorded_and_others_restore() {
 		$id_a   = $this->make_product( 'R-A', 5, '10.00' );
 		$id_b   = $this->make_product( 'R-B', 5, '10.00' );

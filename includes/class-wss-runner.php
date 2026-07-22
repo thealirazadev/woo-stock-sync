@@ -928,8 +928,12 @@ class WSS_Runner {
 	private function snapshot_product( $run_id, $product ) {
 		global $wpdb;
 
-		$prior = array(
-			'stock_quantity' => $product->managing_stock() ? $product->get_stock_quantity() : null,
+		$manages = $product->managing_stock();
+		$prior   = array(
+			// Recorded so rollback can tell a managed-but-unset (null) quantity apart from a product
+			// that was not managing stock at all; both read back as null on their own.
+			'manages_stock'  => $manages,
+			'stock_quantity' => $manages ? $product->get_stock_quantity() : null,
 			'regular_price'  => $product->get_regular_price( 'edit' ),
 			'sale_price'     => $product->get_sale_price( 'edit' ),
 		);
@@ -1108,8 +1112,17 @@ class WSS_Runner {
 		}
 
 		try {
-			if ( array_key_exists( 'stock_quantity', $prior ) && null !== $prior['stock_quantity'] && $product->managing_stock() ) {
-				$product->set_stock_quantity( $prior['stock_quantity'] );
+			// Restore stock when it was under management at snapshot time, so a managed-but-unset
+			// (null) quantity is returned to null rather than left at the value the run applied.
+			// Snapshots written before manages_stock existed fall back to the prior non-null guard.
+			$stock_was_managed = array_key_exists( 'manages_stock', $prior )
+				? ! empty( $prior['manages_stock'] )
+				: ( array_key_exists( 'stock_quantity', $prior ) && null !== $prior['stock_quantity'] );
+
+			if ( $stock_was_managed && $product->managing_stock() ) {
+				// A null prior quantity means managed-but-unset; passing '' restores that, whereas
+				// set_stock_quantity( null ) would coerce to 0 through wc_stock_amount().
+				$product->set_stock_quantity( null === $prior['stock_quantity'] ? '' : $prior['stock_quantity'] );
 			}
 			if ( array_key_exists( 'regular_price', $prior ) ) {
 				$product->set_regular_price( (string) $prior['regular_price'] );
