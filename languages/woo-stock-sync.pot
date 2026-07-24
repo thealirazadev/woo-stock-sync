@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-18T00:06:37+00:00\n"
+"POT-Creation-Date: 2026-07-24T21:09:26+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: woo-stock-sync\n"
@@ -179,57 +179,63 @@ msgstr ""
 msgid "The feed file is not available. Upload a feed file in Settings."
 msgstr ""
 
-#: includes/class-wss-feed.php:208
-#: includes/class-wss-feed.php:356
+#: includes/class-wss-feed.php:210
+#: includes/class-wss-feed.php:358
 msgid "The feed file could not be opened."
 msgstr ""
 
-#: includes/class-wss-feed.php:215
-#: includes/class-wss-feed.php:362
+#: includes/class-wss-feed.php:217
+#: includes/class-wss-feed.php:364
 msgid "The feed file has no header row."
 msgstr ""
 
-#: includes/class-wss-feed.php:235
+#: includes/class-wss-feed.php:237
 msgid "The JSON feed must be a flat array of objects."
 msgstr ""
 
-#: includes/class-wss-feed.php:250
+#: includes/class-wss-feed.php:252
 msgid "The JSON feed is larger than the supported size. Use a CSV feed for very large catalogs."
 msgstr ""
 
-#: includes/class-wss-feed.php:255
+#: includes/class-wss-feed.php:257
 msgid "The feed file could not be read."
 msgstr ""
 
-#: includes/class-wss-feed.php:260
+#: includes/class-wss-feed.php:262
 msgid "The JSON feed could not be parsed. It must be a flat array of objects."
 msgstr ""
 
-#: includes/class-wss-feed.php:264
+#: includes/class-wss-feed.php:266
 msgid "The JSON feed is empty."
 msgstr ""
 
+#. translators: %s: comma-separated list of column names.
+#: includes/class-wss-feed.php:376
+#, php-format
+msgid "The feed is missing these mapped columns: %s. Check the column mapping in Settings against the feed header."
+msgstr ""
+
 #. translators: %s: maximum row count.
-#: includes/class-wss-feed.php:429
+#: includes/class-wss-feed.php:473
 #, php-format
 msgid "The feed has more than %s rows, the supported maximum. Split it into smaller feeds."
 msgstr ""
 
-#: includes/class-wss-feed.php:468
+#: includes/class-wss-feed.php:512
 msgid "The SKU cell is empty."
 msgstr ""
 
-#: includes/class-wss-feed.php:472
+#: includes/class-wss-feed.php:516
 msgid "This SKU already appeared earlier in the feed; the first row wins."
 msgstr ""
 
 #. translators: 1: field name, 2: offending value.
-#: includes/class-wss-feed.php:502
+#: includes/class-wss-feed.php:546
 #, php-format
 msgid "The %1$s value \"%2$s\" is not a valid non-negative number."
 msgstr ""
 
-#: includes/class-wss-feed.php:514
+#: includes/class-wss-feed.php:558
 msgid "The sale price must be lower than the regular price."
 msgstr ""
 
@@ -332,32 +338,32 @@ msgstr ""
 msgid "Another sync is already running. This run was not started."
 msgstr ""
 
-#: includes/class-wss-runner.php:538
+#: includes/class-wss-runner.php:559
 msgid "No product matches this SKU."
 msgstr ""
 
-#: includes/class-wss-runner.php:552
+#: includes/class-wss-runner.php:573
 msgid "The matched product could not be loaded."
 msgstr ""
 
-#: includes/class-wss-runner.php:565
-#: includes/class-wss-runner.php:858
+#: includes/class-wss-runner.php:586
+#: includes/class-wss-runner.php:879
 msgid "This product is locked from stock sync."
 msgstr ""
 
-#: includes/class-wss-runner.php:636
+#: includes/class-wss-runner.php:657
 msgid "This product does not manage stock, so there is nothing to change."
 msgstr ""
 
-#: includes/class-wss-runner.php:652
+#: includes/class-wss-runner.php:673
 msgid "Stock is not managed for this product and will be left unchanged."
 msgstr ""
 
-#: includes/class-wss-runner.php:845
+#: includes/class-wss-runner.php:866
 msgid "The product could not be loaded."
 msgstr ""
 
-#: includes/class-wss-runner.php:1085
+#: includes/class-wss-runner.php:1110
 msgid "The product no longer exists."
 msgstr ""
 
