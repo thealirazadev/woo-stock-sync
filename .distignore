@@ -2,6 +2,7 @@
 /.github
 /.gitignore
 /.distignore
+/.editorconfig
 /.wp-env.json
 /bin
 /docs

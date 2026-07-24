@@ -1,0 +1,28 @@
+# EditorConfig helps keep a consistent coding style across editors.
+# https://editorconfig.org
+# The PHP, JS, and CSS style follows the WordPress Coding Standards: real tabs, LF, UTF-8.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = tab
+
+# Markdown and the WordPress.org readme keep trailing whitespace (hard line breaks) and use spaces.
+[*.{md,txt}]
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = false
+
+# YAML (CI, Dependabot, issue-template config) is two-space indented.
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# Composer manifests are four-space indented.
+[*.json]
+indent_style = space
+indent_size = 4
