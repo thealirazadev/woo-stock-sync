@@ -55,7 +55,7 @@ $wss_has_secret = ( '' !== $settings['auth_header_value'] );
 				<td>
 					<input type="url" class="regular-text" id="wss-feed-url" name="feed_url"
 						value="<?php echo esc_attr( $settings['feed_url'] ); ?>"
-						<?php echo empty( $errors['feed_url'] ) ? '' : 'aria-describedby="feed_url-error"'; ?> />
+						<?php echo empty( $errors['feed_url'] ) ? '' : 'aria-invalid="true" aria-describedby="feed_url-error"'; ?> />
 					<?php $this->field_error( 'feed_url' ); ?>
 					<p class="description"><?php esc_html_e( 'HTTP or HTTPS URL returning CSV or a flat JSON array. Used when the source type is Remote URL.', 'woo-stock-sync' ); ?></p>
 				</td>
@@ -65,7 +65,7 @@ $wss_has_secret = ( '' !== $settings['auth_header_value'] );
 				<td>
 					<input type="text" class="regular-text" id="wss-auth-name" name="auth_header_name"
 						value="<?php echo esc_attr( $settings['auth_header_name'] ); ?>"
-						<?php echo empty( $errors['auth_header_name'] ) ? '' : 'aria-describedby="auth_header_name-error"'; ?> />
+						<?php echo empty( $errors['auth_header_name'] ) ? '' : 'aria-invalid="true" aria-describedby="auth_header_name-error"'; ?> />
 					<?php $this->field_error( 'auth_header_name' ); ?>
 					<p class="description"><?php esc_html_e( 'Optional. Example: Authorization or X-Api-Key.', 'woo-stock-sync' ); ?></p>
 				</td>
@@ -92,7 +92,7 @@ $wss_has_secret = ( '' !== $settings['auth_header_value'] );
 				<th scope="row"><label for="wss-feed-file"><?php esc_html_e( 'Upload feed file', 'woo-stock-sync' ); ?></label></th>
 				<td>
 					<input type="file" id="wss-feed-file" name="feed_file" accept=".csv,.json"
-						<?php echo empty( $errors['feed_file'] ) ? '' : 'aria-describedby="feed_file-error"'; ?> />
+						<?php echo empty( $errors['feed_file'] ) ? '' : 'aria-invalid="true" aria-describedby="feed_file-error"'; ?> />
 					<?php $this->field_error( 'feed_file' ); ?>
 					<?php if ( '' !== $settings['upload_name'] ) : ?>
 						<p class="description">

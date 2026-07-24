@@ -107,7 +107,12 @@ class WSS_Settings {
 			$options[] = $current;
 		}
 
-		printf( '<select name="map_%1$s" id="wss-map-%1$s" class="wss-map-select" data-map="%1$s">', esc_attr( $field ) );
+		// The SKU column is required; when it is unmapped, tie the control to its error for AT.
+		$sku_error = ( 'sku' === $field && ! empty( $this->errors['map_sku'] ) );
+
+		echo '<select name="map_' . esc_attr( $field ) . '" id="wss-map-' . esc_attr( $field ) . '" class="wss-map-select" data-map="' . esc_attr( $field ) . '"'
+			. ( $sku_error ? ' aria-invalid="true" aria-describedby="map_sku-error"' : '' )
+			. '>';
 		echo '<option value="">' . esc_html__( '&mdash; Not mapped &mdash;', 'woo-stock-sync' ) . '</option>';
 		foreach ( $options as $column ) {
 			printf(
