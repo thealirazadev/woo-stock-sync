@@ -40,6 +40,55 @@ in the Decisions log with its reason.
 
 - None. All five phases complete.
 
+## 2026-07-25 - Repo-maturity and accessibility pass
+
+Genuine follow-up hardening. Before: 38 tests / 156 assertions. After: 39 tests / 158 assertions,
+green in integration mode (WordPress 6.8.2 + WooCommerce 10.6.2) and stub mode. phpcs and php -l clean.
+
+Repo-maturity files the public repo lacked, each its own commit and each excluded from the plugin zip
+via `.distignore` where it is a top-level dev/doc file (the `.github/` templates are already covered by
+the existing `/.github` entry):
+
+1. `CONTRIBUTING.md` - project-specific: the two-mode test setup from `docs/testing.md`, phpcs/phpunit
+   commands, WP-CLI usage, the make-pot step, and PR/commit expectations.
+2. `CODE_OF_CONDUCT.md` - Contributor Covenant 2.1 verbatim; enforcement contact routed through the
+   same GitHub private reporting channel `SECURITY.md` already uses (no dedicated conduct inbox exists).
+3. `.github/ISSUE_TEMPLATE/` - bug_report.md, feature_request.md, config.yml. config disables blank
+   issues and links the Security advisory page and the WordPress.org support forum.
+4. `.github/PULL_REQUEST_TEMPLATE.md` - checklist tied to phpcs + phpunit, CRUD-only writes, dbDelta
+   migrations, i18n/pot, and one-change-per-commit.
+5. `.editorconfig` - matches the real style: tabs for PHP/JS/CSS (WPCS), 2-space YAML, 4-space JSON
+   (composer.json), untrimmed markdown/readme.
+6. `CHANGELOG.md` - Keep a Changelog format, single honest 1.0.0 entry. Dated 2026-07-23 (the
+   feature-complete date from this log; no git release tag exists to date it precisely, and no version
+   was invented). readme.txt remains the WordPress.org changelog.
+
+Code improvements (Tier 2), gap verified before each:
+
+7. i18n: the committed `.pot` was stale (generated 2026-07-18, before the 2026-07-23 hardening pass).
+   It was missing the wrapped `__()` string "The feed is missing these mapped columns: %s...".
+   Regenerated with the documented `wp i18n make-pot .`; the only content change is that one string
+   plus refreshed line references.
+8. test: `Test_Schedule::test_scheduled_fetch_skips_when_a_prior_scheduled_run_is_unfinished`. The
+   `has_unfinished_scheduled_run()` guard in `handle_scheduled_fetch()` was documented behavior with no
+   test (only the lock-held skip was covered). The test configures valid URL settings first so
+   `begin_run()` would otherwise create a run - isolating the guard as the only thing that stops it -
+   then asserts no new scheduled run while a prior `previewed` run is unfinished, and that a new run
+   does start once that run is terminal. Verified failing with the guard disabled (count went 1 -> 2).
+9. a11y (settings): field validation errors are now tied to their controls. The three text/url/file
+   inputs add `aria-invalid="true"` alongside the existing `aria-describedby`; the required SKU mapping
+   select, which previously had no error association at all, gains `aria-invalid` + `aria-describedby`
+   pointing at its error. Kept to the template's phpcs-safe literal-ternary idiom.
+10. a11y (run detail): the progress bar was `aria-hidden` (AT saw no progress). It is now a proper
+    `role="progressbar"` with `aria-valuemin/valuemax/valuenow` and an `aria-label` ("Sync progress"),
+    with `aria-valuenow`/`aria-valuemax` updated by the poller in `admin.js`. `.pot` regenerated for the
+    new label string. The outer `role="status"` live region still announces the readable text.
+
+Status badges were audited and deliberately left unchanged: colour is decorative and the status word is
+always printed (documented in `assets/css/admin.css`), so they already convey status to AT; adding aria
+would be redundant. WP_List_Table already emits `scope="col"` column headers. No schema change, no new
+dependency, all product writes still via WooCommerce CRUD.
+
 ## 2026-07-23 - Edge-case hardening pass
 
 Genuine follow-up work after the integration suite came online. Before: 29 tests / 113 assertions
