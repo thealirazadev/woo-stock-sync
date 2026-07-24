@@ -19,6 +19,7 @@
 	function pollProgress( region ) {
 		var runId = region.getAttribute( 'data-run-id' );
 		var terminal = [ 'previewed', 'applied', 'rolled_back', 'cancelled', 'failed' ];
+		var bar = region.querySelector( '.wss-progress-bar' );
 		var fill = region.querySelector( '.wss-progress-fill' );
 		var processedEl = region.querySelector( '.wss-progress-processed' );
 		var totalEl = region.querySelector( '.wss-progress-total' );
@@ -60,6 +61,12 @@
 					}
 					if ( fill ) {
 						fill.style.width = pct + '%';
+					}
+					if ( bar ) {
+						if ( total > 0 ) {
+							bar.setAttribute( 'aria-valuemax', total );
+						}
+						bar.setAttribute( 'aria-valuenow', processed );
 					}
 
 					if ( terminal.indexOf( data.status ) !== -1 ) {

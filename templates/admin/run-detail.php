@@ -160,7 +160,7 @@ $wss_in_prog   = in_array( $run->status, array( 'pending', 'fetching', 'diffing'
 		</p>
 	<?php elseif ( $wss_in_prog ) : ?>
 		<div class="wss-progress" data-run-id="<?php echo esc_attr( $run->id ); ?>" data-status="<?php echo esc_attr( $run->status ); ?>" role="status" aria-live="polite">
-			<div class="wss-progress-bar" aria-hidden="true"><span class="wss-progress-fill"></span></div>
+			<div class="wss-progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="<?php echo absint( $run->rows_total ); ?>" aria-valuenow="0" aria-label="<?php esc_attr_e( 'Sync progress', 'woo-stock-sync' ); ?>"><span class="wss-progress-fill" aria-hidden="true"></span></div>
 			<p class="wss-progress-text">
 				<span class="wss-progress-processed">0</span>
 				<?php esc_html_e( 'of', 'woo-stock-sync' ); ?>

@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-07-24T21:09:26+00:00\n"
+"POT-Creation-Date: 2026-07-24T21:18:27+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: woo-stock-sync\n"
@@ -397,59 +397,59 @@ msgstr ""
 msgid "No sync runs yet. Configure a feed in Settings, then Fetch and preview."
 msgstr ""
 
-#: includes/class-wss-settings.php:111
+#: includes/class-wss-settings.php:116
 msgid "&mdash; Not mapped &mdash;"
 msgstr ""
 
-#: includes/class-wss-settings.php:148
+#: includes/class-wss-settings.php:153
 msgid "You do not have permission to save these settings."
 msgstr ""
 
-#: includes/class-wss-settings.php:164
+#: includes/class-wss-settings.php:169
 msgid "The feed URL must start with http:// or https://."
 msgstr ""
 
-#: includes/class-wss-settings.php:168
+#: includes/class-wss-settings.php:173
 msgid "A feed URL is required when the source is a remote URL."
 msgstr ""
 
-#: includes/class-wss-settings.php:173
+#: includes/class-wss-settings.php:178
 msgid "The header name contains invalid characters."
 msgstr ""
 
-#: includes/class-wss-settings.php:215
+#: includes/class-wss-settings.php:220
 msgid "Map the SKU column. It is required to match feed rows to products."
 msgstr ""
 
-#: includes/class-wss-settings.php:218
+#: includes/class-wss-settings.php:223
 msgid "Map at least one of stock, regular price, or sale price."
 msgstr ""
 
-#: includes/class-wss-settings.php:254
+#: includes/class-wss-settings.php:259
 msgid "The feed file could not be uploaded. Please try again."
 msgstr ""
 
-#: includes/class-wss-settings.php:258
+#: includes/class-wss-settings.php:263
 msgid "The feed file is larger than the allowed size."
 msgstr ""
 
-#: includes/class-wss-settings.php:270
+#: includes/class-wss-settings.php:275
 msgid "Only .csv and .json feed files are accepted."
 msgstr ""
 
-#: includes/class-wss-settings.php:274
+#: includes/class-wss-settings.php:279
 msgid "The upload could not be verified."
 msgstr ""
 
-#: includes/class-wss-settings.php:285
+#: includes/class-wss-settings.php:290
 msgid "The feed file type could not be verified as CSV or JSON."
 msgstr ""
 
-#: includes/class-wss-settings.php:297
+#: includes/class-wss-settings.php:302
 msgid "The feed file could not be saved."
 msgstr ""
 
-#: includes/class-wss-settings.php:315
+#: includes/class-wss-settings.php:320
 msgid "The feed storage directory could not be created."
 msgstr ""
 
@@ -573,6 +573,10 @@ msgstr ""
 
 #: templates/admin/run-detail.php:158
 msgid "Resume sync"
+msgstr ""
+
+#: templates/admin/run-detail.php:163
+msgid "Sync progress"
 msgstr ""
 
 #: templates/admin/run-detail.php:166
