@@ -22,7 +22,7 @@ Include, where you can:
 - the plugin version, PHP version, and WooCommerce version;
 - a description of the issue and its impact;
 - steps to reproduce or a proof of concept;
-- any relevant log lines (redact the feed auth header value — it is a secret and must never appear
+- any relevant log lines (redact the feed auth header value - it is a secret and must never appear
   in a report).
 
 You can expect an acknowledgement within a few business days and a coordinated fix and disclosure

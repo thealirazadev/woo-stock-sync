@@ -56,7 +56,7 @@ shortcut, follow these rules.
 
 - Every boundary call handles failure: `wp_remote_get` (check `is_wp_error` and HTTP status),
   `fopen`/`fgetcsv` (false returns), `json_decode` (null + `json_last_error`), every `$wpdb` write
-  (false return), `wc_get_product` (false/null), `WC_Product::save()` (wrapped in try/catch —
+  (false return), `wc_get_product` (false/null), `WC_Product::save()` (wrapped in try/catch -
   `WC_Data_Exception` and hooks from other plugins can throw). A row-level failure is recorded on
   the row and never aborts the batch; a run-level failure sets the run `failed` with `error` filled
   and releases the lock.

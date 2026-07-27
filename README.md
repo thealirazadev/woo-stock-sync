@@ -55,7 +55,7 @@ rationale lives in `docs/architecture.md` and `docs/PRD.md`.
   persists jobs, and retries.
 - **Dry-run before apply as the default workflow.** Every sync starts as a preview: a diff of
   product, field, current value, new value, and planned action. Nothing is written until the run is
-  explicitly applied. Applying straight from the feed was rejected — the target user needs to see
+  explicitly applied. Applying straight from the feed was rejected - the target user needs to see
   what will change before it changes. Scheduled runs stop at the preview too; auto-apply is opt-in.
 - **Update-only in v1.** The plugin only updates products that already exist, matched by SKU.
   Unknown SKUs are reported (`unknown_sku`), never created. Product creation from a feed pulls in
@@ -103,7 +103,7 @@ composer run test                    # PHPUnit
 
 Pure-logic tests (feed parsing/validation, the sync lock) run standalone; the integration tests
 self-skip until WordPress is available. To run the whole suite, point `WP_TESTS_DIR` at a WordPress
-core test library and `WC_PLUGIN_PATH` at a WooCommerce checkout — `docs/testing.md` has the exact
+core test library and `WC_PLUGIN_PATH` at a WooCommerce checkout - `docs/testing.md` has the exact
 provisioning commands, and CI runs them on every push. `wp-env` works too but is not required.
 
 ## Benchmark

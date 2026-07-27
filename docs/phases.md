@@ -2,15 +2,15 @@
 
 Rule: phase N+1 does not start until the owner approves phase N (definition of done, manual
 checklist, and verification all pass). One commit per feature/task, in the listed order. The senior
-differentiators — partial-failure isolation, dry-run-then-apply with rollback, and shared-hosting
-batch processing with resumability and overlap protection — are hard requirements of Phases 1 and 2.
+differentiators - partial-failure isolation, dry-run-then-apply with rollback, and shared-hosting
+batch processing with resumability and overlap protection - are hard requirements of Phases 1 and 2.
 
 ---
 
 ## Phase 1: Foundation, schema, feed ingest, and dry-run diff
 
 Goal: a store owner can configure a feed, fetch it, and see a complete dry-run diff of what a sync
-would change — with every bad row isolated and reported — before any product is touched. No writes
+would change - with every bad row isolated and reported - before any product is touched. No writes
 to products in this phase.
 
 ### Definition of done
@@ -52,7 +52,7 @@ to products in this phase.
 - Unhappy paths: malformed CSV line mid-file (row failed, parse continues); empty feed file (run
   previewed with zero rows, empty-state message); no network during remote fetch (run failed,
   friendly error); double-click "Fetch and preview" (second fetch refused while a run is still
-  fetching or diffing — a simple active-run status check in this phase; the atomic lock lands in
+  fetching or diffing - a simple active-run status check in this phase; the atomic lock lands in
   Phase 2); refresh the run screen mid-diff (progress state renders, no duplicate scheduling).
 - Empty states: no runs yet (runs list empty state); diff with zero changes ("Nothing to change").
 - Long inputs: 100-char SKU and very long feed values render without breaking the table layout.

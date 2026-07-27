@@ -27,11 +27,11 @@ in the Decisions log with its reason.
   1. `tests/test-diff.php::test_a_throwing_product_is_isolated_and_the_preview_completes` (written
      with the diff-isolation fix but never run) was verified both ways: with the fix it passes; with
      the fix reverted the `RuntimeException` escapes `handle_diff_batch()` and the test errors, which
-     is exactly the stranded-run defect. The fix is adequate — the row lands `failed`/`wc_error`,
+     is exactly the stranded-run defect. The fix is adequate - the row lands `failed`/`wc_error`,
      the cursor advances, and `finalize_preview` counts it in `rows_failed`.
   2. `Test_Lock` failed under the WP suite. Broken test, not a code bug: it is a plain PHPUnit case,
      so it is outside the `WP_UnitTestCase` transaction, and resetting the stub option array no
-     longer clears a real option — the first test left run 1 holding the lock. Fixed by
+     longer clears a real option - the first test left run 1 holding the lock. Fixed by
      force-releasing the lock in `setUp`/`tearDown`.
   `tests/bootstrap.php` now honours `WC_PLUGIN_PATH` so WooCommerce can live anywhere; CI gained an
   `integration-tests` job and `docs/testing.md` documents the provisioning commands.
@@ -236,8 +236,8 @@ existing snapshot JSON). No new dependencies. `phpcs`, `php -l`, and both suite 
   dist-archive package, which are not project dependencies. Full integration coverage stays a
   wp-env / WP-capable-host job, noted in a comment in the workflow.
 - 2026-07-22 - SUPERSEDED: the integration tests do run on a hosted runner, and the claim that they
-  need wp-env was wrong. They need three things wp-env happens to bundle — a WordPress core
-  checkout, the core test library from `wordpress-develop`, and a MySQL/MariaDB server — and all
+  need wp-env was wrong. They need three things wp-env happens to bundle - a WordPress core
+  checkout, the core test library from `wordpress-develop`, and a MySQL/MariaDB server - and all
   three are a few `curl` calls plus a service container. `ci.yml` now has an `integration-tests` job
   with a `mariadb:11.4` service that provisions them and runs the full suite; `lint-and-test` keeps
   running the suite in stub mode so the no-database path stays covered. The provisioning avoids

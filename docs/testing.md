@@ -86,7 +86,7 @@ The suite has two modes and picks one automatically in `tests/bootstrap.php`:
   real and the whole suite executes.
 
 Integration mode needs three things: a WordPress core checkout, the WordPress core test library,
-and a MySQL/MariaDB server. `wp-env` provisions all three, but it is not required — and where
+and a MySQL/MariaDB server. `wp-env` provisions all three, but it is not required - and where
 `wp-env` cannot start (no working Docker Compose, for example) the suite still runs, because
 nothing about it depends on wp-env. Provision the pieces directly:
 

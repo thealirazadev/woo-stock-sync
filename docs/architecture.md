@@ -35,7 +35,7 @@ any stage -> failed                            applied -> rolling_back -> rolled
    documented 20 MB size cap), apply the mapping snapshot, validate each row's values
    (numeric, non-negative; sale < regular when both present), and insert one `wss_rows` row per
    feed row. Invalid rows are recorded with status `failed` + reason (`invalid_number`,
-   `invalid_sale_price`, `missing_sku`, `duplicate_sku` — first occurrence of a SKU wins) and
+   `invalid_sale_price`, `missing_sku`, `duplicate_sku` - first occurrence of a SKU wins) and
    never abort the parse. Hard cap: 50,000 rows per run.
 2. Diff (`wss_diff_batch` recurring-until-done action): in batches, resolve SKU to product ID via
    `wc_get_product_id_by_sku`, load current values through WooCommerce CRUD, and set each row to
@@ -71,7 +71,7 @@ any stage -> failed                            applied -> rolling_back -> rolled
 - Overlap protection: a single mutex via `add_option( 'wss_active_run', $run_id, '', false )`,
   which is atomic thanks to the unique key on `option_name`. Every active stage requires the lock:
   it is acquired when a run starts fetching, applying, or rolling back, and released when the run
-  reaches `previewed` or a terminal state — so a previewed run awaiting review does not block
+  reaches `previewed` or a terminal state - so a previewed run awaiting review does not block
   anything, but no two runs can ever be doing work concurrently. Scheduled fetches skip with a
   logged reason when the lock is held. The lock is deleted on finish/failure; the admin shows a
   "Release lock" action for stale locks (held longer than 15 minutes with no row progress).
@@ -150,7 +150,7 @@ woo-stock-sync/
   correct. Direct SQL writes to products are forbidden.
 - Streaming CSV via `fgetcsv` and `wp_remote_get( ..., array( 'stream' => true ) )`: constant
   memory regardless of feed size. JSON has no streaming parser in core, so JSON feeds are decoded
-  whole under a 20 MB cap — a documented trade-off; suppliers with bigger feeds use CSV.
+  whole under a 20 MB cap - a documented trade-off; suppliers with bigger feeds use CSV.
 - Vanilla JS + plain CSS in admin: the UI is forms, tables, and a polled progress bar; a framework
   or build step would add risk without benefit. WP_List_Table gives native pagination/filtering.
 - Composer + PHPCS/WPCS + PHPUnit: the conventional quality gates for a distributable plugin.
@@ -160,7 +160,7 @@ woo-stock-sync/
 
 Custom tables (created by dbDelta, prefixed with `$wpdb->prefix`):
 
-`wss_runs` — one row per sync run.
+`wss_runs` - one row per sync run.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -177,7 +177,7 @@ Custom tables (created by dbDelta, prefixed with `$wpdb->prefix`):
 
 Indexes: PK, KEY `status`, KEY `created_at`.
 
-`wss_rows` — one row per feed row per run.
+`wss_rows` - one row per feed row per run.
 
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -195,7 +195,7 @@ Indexes: PK, KEY `status`, KEY `created_at`.
 
 Indexes: PK, KEY `run_status` (`run_id`, `status`, `id`), KEY `run_row` (`run_id`, `row_num`).
 
-`wss_snapshots` — prior values captured at apply time; the rollback source of truth.
+`wss_snapshots` - prior values captured at apply time; the rollback source of truth.
 
 | Column | Type | Notes |
 | --- | --- | --- |

@@ -73,9 +73,9 @@ badges, the diff table, and the progress bar.
 ## Component states
 
 - Buttons: core admin hover/focus/active states. Destructive-ish actions (Apply, Roll back,
-  Release lock) use a native `confirm()`-equivalent inline confirmation — the Apply confirmation
+  Release lock) use a native `confirm()`-equivalent inline confirmation - the Apply confirmation
   states the run's age ("This preview was created 3 hours ago"), and the Roll back confirmation
-  warns that it overwrites any manual edits made since the sync was applied — and are disabled with
+  warns that it overwrites any manual edits made since the sync was applied - and are disabled with
   `aria-disabled` plus a spinner (`.spinner.is-active`) while their admin-post request is in
   flight to prevent double submission.
 - Disabled: Apply is rendered disabled with an explanatory title when the run is not previewed or
