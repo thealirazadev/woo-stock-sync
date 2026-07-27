@@ -59,6 +59,7 @@ if ( $wss_has_wp_suite ) {
 	fwrite( STDERR, "WordPress test suite not found; running pure-logic tests with stubs.\n" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- writing to STDERR in the test harness.
 
 	require __DIR__ . '/support/stubs.php';
+	require dirname( __DIR__ ) . '/includes/wss-functions.php';
 	require dirname( __DIR__ ) . '/includes/class-wss-feed.php';
 	require dirname( __DIR__ ) . '/includes/class-wss-runner.php';
 }
