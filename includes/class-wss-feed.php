@@ -517,6 +517,10 @@ class WSS_Feed {
 		}
 		$seen[ $sku ] = true;
 
+		$markup_type  = isset( $settings['markup_type'] ) ? $settings['markup_type'] : 'none';
+		$markup_value = isset( $settings['markup_value'] ) ? $settings['markup_value'] : 0;
+		$decimals     = function_exists( 'wc_get_price_decimals' ) ? wc_get_price_decimals() : 2;
+
 		$new = array();
 		foreach ( array( 'stock', 'regular_price', 'sale_price' ) as $field ) {
 			$column = $mapping[ $field ];
@@ -550,7 +554,14 @@ class WSS_Feed {
 				);
 			}
 
-			$new[ $field ] = $cell;
+			// Prices are marked up before staging so the diff and the apply write the same adjusted
+			// value; stock is a quantity and is never marked up. The sale-below-regular check below
+			// then runs on the adjusted values, keeping the invariant true for what will be written.
+			if ( 'regular_price' === $field || 'sale_price' === $field ) {
+				$new[ $field ] = wss_adjust_price( $cell, $markup_type, $markup_value, $decimals );
+			} else {
+				$new[ $field ] = $cell;
+			}
 		}
 
 		if ( isset( $new['regular_price'], $new['sale_price'] ) && '' !== $new['sale_price']
