@@ -270,6 +270,61 @@ gates.
 
 ---
 
+## Phase 6: Price markup rules
+
+Goal: a store owner can apply a markup to supplier prices during a sync — a percentage or a fixed
+amount — so the store sells above the raw feed price. The dry-run diff shows the final adjusted
+price so the preview is truthful, and a markup of zero preserves the current pass-through behavior.
+
+### Definition of done
+- Settings gain a markup type (none, percentage, fixed) and a markup value, both validated
+  server-side and stored in `wss_settings`. Type defaults to none, value to 0. A negative value is
+  accepted as a markdown; the result is what is guarded, not the input.
+- A pure `wss_adjust_price()` helper computes the adjusted price: percentage (`price + price *
+  value / 100`) or fixed (`price + value`), rounded to the store's price decimals, and never
+  negative (a result below zero is clamped to 0). Type none, a zero value, or an empty/non-numeric
+  price returns the value unchanged.
+- The markup is applied to the regular price and the sale price during staging, so `wss_rows`
+  carries the final adjusted value; stock is never marked up. The sale-below-regular check runs on
+  the adjusted values, so the invariant holds on exactly what will be written. Product writes stay
+  on WooCommerce CRUD.
+- The dry-run diff shows the final adjusted price (supplier price plus markup) as the new value, and
+  planned/no_change is decided against the adjusted value. Because the adjusted value is staged
+  once, the preview and the apply write the same number even if settings change in between.
+- Zero/none markup leaves v1 behavior byte-for-byte identical. Partial-failure isolation and
+  rollback are unchanged: snapshots still capture each product's real prior values.
+
+### Manual test checklist
+- Set a +15% markup, map regular price, fetch a feed row priced 20.00: the diff shows 23.00 as the
+  new value; applying writes 23.00 to the product.
+- Set a +5.00 fixed markup: a 10.00 feed row previews and applies as 15.00.
+- Set the markup back to none (or value 0): the diff shows the raw feed price, identical to v1.
+- Configure a markdown large enough to go negative (for example -200%): the adjusted price is 0.00,
+  never negative, and the row is not written as a negative price.
+- Roll back a markup apply: the prior prices are restored exactly.
+
+### Verification
+- Run the app: Settings saves the markup type and value; a full fetch -> preview -> apply cycle
+  shows and writes adjusted prices; browser console and PHP debug log clean.
+- Run `composer run lint` and `composer run test` (stub and integration modes): both clean.
+- Unhappy paths: a non-numeric markup value coerces to 0 (pass-through); a row with only stock
+  mapped is unaffected by any markup; an empty sale-price cell stays a clear, never a markup.
+- Empty states: none markup on a feed that matches the store still previews as no_change.
+- Long inputs: a very large price plus a markup still formats to the store's price decimals.
+
+### Commits
+- `docs: add price markup phase to phases`
+- `feat: add price markup adjustment helper`
+- `test: cover price markup adjustment helper`
+- `feat: add price markup settings`
+- `feat: apply price markup to feed prices during staging`
+- `test: cover markup applied to staged feed rows`
+- `test: cover markup in the dry-run diff and apply`
+- `chore: regenerate translation template for markup strings`
+- `docs: document price markup rules in readme and memory`
+
+---
+
 ## Backlog
 
 (Empty. Add out-of-scope or deferred items here as they arise.)
