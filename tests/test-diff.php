@@ -70,11 +70,12 @@ class Test_Diff extends WSS_Integration_TestCase {
 	/**
 	 * Configure settings and stage + diff a run from a CSV body.
 	 *
-	 * @param string $csv     CSV content.
-	 * @param array  $mapping Column mapping.
+	 * @param string $csv            CSV content.
+	 * @param array  $mapping        Column mapping.
+	 * @param array  $extra_settings Extra settings merged over the defaults (for example a markup).
 	 * @return int Run ID.
 	 */
-	private function run_diff( $csv, $mapping ) {
+	private function run_diff( $csv, $mapping, $extra_settings = array() ) {
 		$path        = tempnam( sys_get_temp_dir(), 'wssdiff' ) . '.csv';
 		$this->tmp[] = $path;
 		file_put_contents( $path, $csv );
@@ -87,7 +88,8 @@ class Test_Diff extends WSS_Integration_TestCase {
 					'source_type' => 'upload',
 					'upload_path' => $path,
 					'mapping'     => $mapping,
-				)
+				),
+				$extra_settings
 			)
 		);
 
@@ -208,5 +210,40 @@ class Test_Diff extends WSS_Integration_TestCase {
 
 		$this->assertSame( 'skipped', $rows['D-NOSTOCK']->status );
 		$this->assertSame( 'stock_not_managed', $rows['D-NOSTOCK']->reason );
+	}
+
+	public function test_markup_is_reflected_in_the_diff() {
+		$this->make_product( 'M-UP', 5, '20.00' );
+		// Already sitting at the marked-up price (20.00 + 15% = 23.00).
+		$this->make_product( 'M-SAME', 5, '23.00' );
+
+		$mapping = array(
+			'sku'           => 'sku',
+			'stock'         => '',
+			'regular_price' => 'price',
+			'sale_price'    => '',
+		);
+
+		$run_id = $this->run_diff(
+			"sku,price\nM-UP,20.00\nM-SAME,20.00\n",
+			$mapping,
+			array(
+				'markup_type'  => 'percentage',
+				'markup_value' => 15,
+			)
+		);
+		$rows   = $this->rows_by_sku( $run_id );
+
+		// The preview shows the final adjusted price (supplier price plus markup), not the raw feed
+		// value, and the change decision is made against that adjusted value.
+		$this->assertSame( 'planned', $rows['M-UP']->status );
+		$new = json_decode( $rows['M-UP']->new_values, true );
+		$this->assertSame( '23.00', $new['regular_price'], 'the diff shows the adjusted price, not the raw 20.00' );
+
+		$current = json_decode( $rows['M-UP']->current_values, true );
+		$this->assertSame( '20.00', (string) $current['regular_price'] );
+
+		// The store already matches the adjusted price, so there is nothing to change.
+		$this->assertSame( 'no_change', $rows['M-SAME']->status );
 	}
 }

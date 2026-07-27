@@ -53,7 +53,7 @@ class Test_Apply extends WSS_Integration_TestCase {
 		return $product->save();
 	}
 
-	private function stage_and_diff( $csv, $mapping ) {
+	private function stage_and_diff( $csv, $mapping, $extra_settings = array() ) {
 		$path        = tempnam( sys_get_temp_dir(), 'wssapply' ) . '.csv';
 		$this->tmp[] = $path;
 		file_put_contents( $path, $csv );
@@ -68,7 +68,7 @@ class Test_Apply extends WSS_Integration_TestCase {
 
 		update_option(
 			'wss_settings',
-			array_merge( wss_settings_defaults(), array( 'mapping' => $mapping ) )
+			array_merge( wss_settings_defaults(), array( 'mapping' => $mapping ), $extra_settings )
 		);
 
 		$this->runner->handle_fetch( $run_id );
@@ -234,5 +234,41 @@ class Test_Apply extends WSS_Integration_TestCase {
 		$this->runner->handle_apply_batch( $run_id );
 		$this->assertSame( 2, (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}wss_snapshots WHERE run_id = %d", $run_id ) ) );
 		$this->assertSame( 20.0, (float) wc_get_product( wc_get_product_id_by_sku( 'A-1' ) )->get_stock_quantity() );
+	}
+
+	public function test_markup_is_written_through_crud_and_rolls_back_to_the_prior_price() {
+		$this->make_product( 'M-APPLY', 5, '10.00' );
+
+		$mapping = array(
+			'sku'           => 'sku',
+			'stock'         => '',
+			'regular_price' => 'price',
+			'sale_price'    => '',
+		);
+
+		$run_id = $this->stage_and_diff(
+			"sku,price\nM-APPLY,10.00\n",
+			$mapping,
+			array(
+				'markup_type'  => 'fixed',
+				'markup_value' => 5,
+			)
+		);
+		$this->apply_run( $run_id );
+
+		$this->assertSame( 'applied', wss_get_run( $run_id )->status );
+
+		// The apply path wrote the adjusted price (10.00 + 5.00) through WooCommerce CRUD.
+		$this->assertSame( '15.00', wc_get_product( wc_get_product_id_by_sku( 'M-APPLY' ) )->get_regular_price() );
+
+		// Rollback restores the real prior price, not the marked-up value.
+		$guard = 0;
+		while ( in_array( wss_get_run( $run_id )->status, array( 'applied', 'rolling_back' ), true ) && $guard < 5000 ) {
+			$this->runner->handle_rollback_batch( $run_id );
+			++$guard;
+		}
+
+		$this->assertSame( 'rolled_back', wss_get_run( $run_id )->status );
+		$this->assertSame( '10.00', wc_get_product( wc_get_product_id_by_sku( 'M-APPLY' ) )->get_regular_price() );
 	}
 }
