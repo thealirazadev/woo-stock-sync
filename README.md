@@ -7,10 +7,10 @@
 
 A WooCommerce plugin that keeps store stock levels and prices in sync with a supplier feed. A store
 owner points the plugin at a CSV upload or a remote CSV/JSON URL, maps feed columns to product
-fields keyed by SKU, previews every change as a dry-run diff, applies the sync in background batches
-through Action Scheduler, and can roll back the last applied sync from stored prior values. Every
-run, row result, and rollback is recorded in custom audit tables, and the same actions are available
-from WP-CLI.
+fields keyed by SKU, optionally marks supplier prices up by a percentage or a fixed amount, previews
+every change as a dry-run diff, applies the sync in background batches through Action Scheduler, and
+can roll back the last applied sync from stored prior values. Every run, row result, and rollback is
+recorded in custom audit tables, and the same actions are available from WP-CLI.
 
 Status: implemented (v1.0.0)
 
@@ -61,6 +61,14 @@ rationale lives in `docs/architecture.md` and `docs/PRD.md`.
   Unknown SKUs are reported (`unknown_sku`), never created. Product creation from a feed pulls in
   titles, images, categories, and tax/shipping decisions that belong to a PIM, not a stock syncer,
   so it is deliberately out of scope for v1.
+- **Price markup applied at staging, not on write.** An optional markup (a percentage or a fixed
+  amount) is applied to the regular and sale prices once, as feed rows are staged, so the adjusted
+  value is what the dry-run diff shows and what the apply later writes through WooCommerce CRUD.
+  Applying the markup separately at diff time and again at apply time was rejected: settings could
+  change between preview and apply, making the preview a lie. Staging the adjusted value once keeps
+  the preview truthful, leaves rollback (which snapshots each product's real prior values) untouched,
+  and never marks up stock. A markup of zero is a byte-identical pass-through, and any result below
+  zero is clamped to 0 so a markdown can never write a negative price.
 
 ## Install
 

@@ -272,8 +272,8 @@ gates.
 
 ## Phase 6: Price markup rules
 
-Goal: a store owner can apply a markup to supplier prices during a sync — a percentage or a fixed
-amount — so the store sells above the raw feed price. The dry-run diff shows the final adjusted
+Goal: a store owner can apply a markup to supplier prices during a sync (a percentage or a fixed
+amount) so the store sells above the raw feed price. The dry-run diff shows the final adjusted
 price so the preview is truthful, and a markup of zero preserves the current pass-through behavior.
 
 ### Definition of done

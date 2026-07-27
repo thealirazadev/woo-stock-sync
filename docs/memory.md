@@ -38,7 +38,45 @@ in the Decisions log with its reason.
 
 ## In progress
 
-- None. All five phases complete.
+- None. Phases 1-5, plus the Phase 6 price-markup feature, are complete.
+
+## 2026-07-27 - Phase 6: price markup rules
+
+New v2 feature: an optional markup applied to supplier prices during a sync (percentage or fixed
+amount), with rounding and a non-negative guard. Before: 39 tests / 158 assertions (integration),
+39 / 20-skipped (stub). After: 53 tests / 191 assertions (integration), 53 / 22-skipped (stub).
+phpcs (8 files) and `php -l` clean throughout. New phase documented in `docs/phases.md`.
+
+What shipped, one commit each:
+1. `wss_adjust_price( $price, $type, $value, $decimals = 2 )` in `wss-functions.php`: pure, side-effect
+   free. Percentage (`price + price * value/100`) or fixed (`price + value`), rounded via
+   `number_format` to the given decimals, result clamped to >= 0. Type none, a zero value, or an
+   empty/non-numeric price returns the value untouched. Added to the stub-mode bootstrap require list
+   so it (and the parse path that calls it) is testable without the WP suite.
+2. Settings: `markup_type` (none|percentage|fixed, default none) and `markup_value` (float, default 0)
+   added to `wss_settings_defaults()`, validated in `WSS_Settings::save()` (type against the enum,
+   value coerced to 0 when non-numeric so a typo never writes a surprise price), and a "Price markup"
+   section on the settings screen.
+3. Applied at staging: `WSS_Feed::map_and_validate_row()` marks up the regular and sale price only
+   (never stock) before staging, using `wc_get_price_decimals()` (fallback 2). The sale-below-regular
+   check then runs on the adjusted values, so the invariant holds for what will be written.
+
+Decision - apply the markup once at staging, not at diff and again at apply. The adjusted value is
+baked into `wss_rows.new_values`, so the dry-run diff shows it, the change decision compares against
+it, and the apply writes the same number via CRUD. Applying it separately at diff and apply time was
+rejected: a settings change between preview and apply would make the preview untruthful, which is the
+one thing a dry-run must not be. This also means no product-write code changed - the existing
+`write_values()` CRUD path writes the already-adjusted `new_values` - and rollback is untouched
+because snapshots capture each product's real prior values, independent of any markup.
+
+No schema change: the markup lives in the `wss_settings` option, so no migration was needed and
+`WSS_Install::DB_VERSION` stays at 1. Zero/none markup is a byte-identical pass-through, so all v1
+behavior and every prior test is unchanged. All product writes remain on WooCommerce CRUD; no new
+dependency.
+
+FLAG - `docs/architecture.md` (source of truth, not edited) now drifts slightly: its `wss_settings`
+row does not list the two new markup keys. Left for owner review per the boundary rule rather than
+edited in this pass.
 
 ## 2026-07-25 - Repo-maturity and accessibility pass
 
