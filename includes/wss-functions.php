@@ -82,6 +82,49 @@ function wss_get_settings() {
 }
 
 /**
+ * Apply a configured markup to a supplier price.
+ *
+ * Pure and side-effect free so it can be unit tested in isolation. The result is rounded to the
+ * store's price decimals and never negative: a markup that would drive the price below zero is
+ * clamped to 0. A markup of zero, a type other than percentage/fixed, or an empty/non-numeric price
+ * returns the value untouched, preserving the v1 pass-through behavior exactly.
+ *
+ * @param string|float $price    Raw supplier price.
+ * @param string       $type     Markup type: 'none', 'percentage', or 'fixed'.
+ * @param string|float $value    Markup amount (percent for 'percentage', currency for 'fixed'; may
+ *                               be negative for a markdown).
+ * @param int          $decimals Decimal places to round to. Defaults to 2.
+ * @return string|float The adjusted price as a decimal string, or the original value when passed through.
+ */
+function wss_adjust_price( $price, $type, $value, $decimals = 2 ) {
+	// Empty or non-numeric prices pass through untouched (for example a blank/cleared sale price).
+	if ( '' === $price || null === $price || ! is_numeric( $price ) ) {
+		return $price;
+	}
+
+	$value = (float) $value;
+
+	// No markup configured, or a zero amount: keep the raw value so pass-through is byte-identical.
+	if ( ( 'percentage' !== $type && 'fixed' !== $type ) || 0.0 === $value ) {
+		return $price;
+	}
+
+	$amount = (float) $price;
+	if ( 'percentage' === $type ) {
+		$amount += $amount * ( $value / 100 );
+	} else {
+		$amount += $value;
+	}
+
+	// Never write a negative price.
+	if ( $amount < 0 ) {
+		$amount = 0.0;
+	}
+
+	return number_format( $amount, max( 0, (int) $decimals ), '.', '' );
+}
+
+/**
  * Absolute path to the protected uploads subdirectory for feed files.
  *
  * @return string
