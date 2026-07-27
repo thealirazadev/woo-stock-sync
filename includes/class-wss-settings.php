@@ -216,6 +216,15 @@ class WSS_Settings {
 		$clean['mapping']           = $mapping;
 		$clean['blank_clears_sale'] = ! empty( $raw_post['blank_clears_sale'] );
 
+		$markup_types         = array( 'none', 'percentage', 'fixed' );
+		$clean['markup_type'] = ( isset( $raw_post['markup_type'] ) && in_array( $raw_post['markup_type'], $markup_types, true ) )
+			? $raw_post['markup_type']
+			: 'none';
+
+		// A non-numeric amount coerces to 0 (pass-through), so a typo never writes a surprise price.
+		$markup_value_raw      = isset( $raw_post['markup_value'] ) ? trim( (string) $raw_post['markup_value'] ) : '';
+		$clean['markup_value'] = is_numeric( $markup_value_raw ) ? (float) $markup_value_raw : 0;
+
 		if ( '' === $mapping['sku'] ) {
 			$errors['map_sku'] = __( 'Map the SKU column. It is required to match feed rows to products.', 'woo-stock-sync' );
 		}

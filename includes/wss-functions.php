@@ -58,6 +58,8 @@ function wss_settings_defaults() {
 			'sale_price'    => '',
 		),
 		'blank_clears_sale' => false,
+		'markup_type'       => 'none',
+		'markup_value'      => 0,
 	);
 }
 

@@ -192,5 +192,41 @@ $wss_has_secret = ( '' !== $settings['auth_header_value'] );
 		</tbody>
 	</table>
 
+	<h2><?php esc_html_e( 'Price markup', 'woo-stock-sync' ); ?></h2>
+	<p class="description">
+		<?php esc_html_e( 'Optionally mark supplier prices up before they are written. The markup applies to the regular price and the sale price only, never to stock, and the dry-run diff shows the final adjusted price.', 'woo-stock-sync' ); ?>
+	</p>
+	<table class="form-table" role="presentation">
+		<tbody>
+			<tr>
+				<th scope="row"><label for="wss-markup-type"><?php esc_html_e( 'Markup type', 'woo-stock-sync' ); ?></label></th>
+				<td>
+					<?php
+					$wss_markup_types = array(
+						'none'       => __( 'None (pass the supplier price through)', 'woo-stock-sync' ),
+						'percentage' => __( 'Percentage', 'woo-stock-sync' ),
+						'fixed'      => __( 'Fixed amount', 'woo-stock-sync' ),
+					);
+					?>
+					<select name="markup_type" id="wss-markup-type">
+						<?php foreach ( $wss_markup_types as $wss_value => $wss_label ) : ?>
+							<option value="<?php echo esc_attr( $wss_value ); ?>" <?php selected( $wss_value, $settings['markup_type'] ); ?>>
+								<?php echo esc_html( $wss_label ); ?>
+							</option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><label for="wss-markup-value"><?php esc_html_e( 'Markup amount', 'woo-stock-sync' ); ?></label></th>
+				<td>
+					<input type="number" step="any" class="small-text" id="wss-markup-value" name="markup_value"
+						value="<?php echo esc_attr( (string) $settings['markup_value'] ); ?>" />
+					<p class="description"><?php esc_html_e( 'For a percentage, enter 15 to add 15%. For a fixed amount, the value is added in the store currency. Zero passes the supplier price through unchanged. A markup that would make a price negative is stored as 0.', 'woo-stock-sync' ); ?></p>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+
 	<?php submit_button( __( 'Save settings', 'woo-stock-sync' ) ); ?>
 </form>
