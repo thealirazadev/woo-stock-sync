@@ -369,4 +369,53 @@ class Test_Feed_Parsing extends \PHPUnit\Framework\TestCase {
 		$this->assertSame( '7', $rows[0]['new_values']['stock'] );
 		$this->assertSame( 'invalid_number', $rows[1]['reason'] );
 	}
+
+	public function test_percentage_markup_is_applied_to_staged_prices() {
+		$settings                 = $this->settings;
+		$settings['markup_type']  = 'percentage';
+		$settings['markup_value'] = 15;
+
+		$path           = $this->write_tmp( "sku,qty,price,sale_price\nMU,5,20.00,10.00\n" );
+		list( , $rows ) = $this->parse_file( $path, $settings );
+
+		$this->assertSame( 'staged', $rows[0]['status'] );
+		// Both prices carry the +15% markup; stock is a quantity and is left untouched.
+		$this->assertSame(
+			array(
+				'stock'         => '5',
+				'regular_price' => '23.00',
+				'sale_price'    => '11.50',
+			),
+			$rows[0]['new_values']
+		);
+	}
+
+	public function test_fixed_markup_is_applied_to_staged_prices() {
+		$settings                 = $this->settings;
+		$settings['markup_type']  = 'fixed';
+		$settings['markup_value'] = 5;
+
+		$path           = $this->write_tmp( "sku,qty,price,sale_price\nMU,5,10.00,\n" );
+		list( , $rows ) = $this->parse_file( $path, $settings );
+
+		$this->assertSame(
+			array(
+				'stock'         => '5',
+				'regular_price' => '15.00',
+			),
+			$rows[0]['new_values']
+		);
+	}
+
+	public function test_zero_markup_is_a_byte_identical_pass_through() {
+		$settings                 = $this->settings;
+		$settings['markup_type']  = 'percentage';
+		$settings['markup_value'] = 0;
+
+		$path           = $this->write_tmp( "sku,qty,price,sale_price\nMU,5,19.99,\n" );
+		list( , $rows ) = $this->parse_file( $path, $settings );
+
+		// A zero markup must leave the raw feed value exactly as v1 staged it.
+		$this->assertSame( '19.99', $rows[0]['new_values']['regular_price'] );
+	}
 }
