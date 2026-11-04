@@ -66,7 +66,7 @@ Run all from the plugin root.
 - First-time test-suite setup (once per environment): see "Provisioning the WordPress test
   environment" below
 - Run the full test suite: `composer run test`
-- Run a single test file: `vendor/bin/phpunit tests/test-apply.php`
+- Run a single test class: `vendor/bin/phpunit --filter Test_Apply`
 - Lint: `composer run lint`
 - Auto-fix fixable lint issues: `composer run lint:fix`
 - Regenerate translation template: `wp i18n make-pot . languages/woo-stock-sync.pot`
