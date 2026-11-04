@@ -96,9 +96,11 @@ shortcut, follow these rules.
   via WooCommerce CRUD (parameterized by core).
 - XSS: all run/row data rendered in admin (SKUs, messages, feed-derived values) is escaped with
   `esc_html`/`esc_attr` at output. Feed content is hostile input.
-- SSRF note: feed URLs accept http/https only. Fetches go through `wp_remote_get` (honoring
-  `WP_HTTP_BLOCK_EXTERNAL`/`WP_ACCESSIBLE_HOSTS` if the site sets them); no redirect following
-  beyond the WP default, response size capped.
+- SSRF note: feed URLs accept http/https only. Fetches go through `wp_safe_remote_get`, which
+  refuses loopback, private-network, and non-standard-port targets (including redirects to them)
+  and honors `WP_HTTP_BLOCK_EXTERNAL`/`WP_ACCESSIBLE_HOSTS` if the site sets them; no redirect
+  following beyond the WP default, response size capped. A feed on an internal host is allowed
+  through the core `http_request_host_is_external` filter.
 - Protected actions summary: everything under the Stock Sync menu plus all wss_* admin-post/ajax
   actions require `manage_woocommerce` + a valid action nonce. Editing `_wss_locked` requires
   `edit_post` on that product (saved through the normal product save flow). There are no
