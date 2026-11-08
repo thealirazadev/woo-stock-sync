@@ -37,8 +37,8 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
-				<element value="wss"/>
-				<element value="WSS"/>
+				<element value="wss_"/>
+				<element value="WSS_"/>
 			</property>
 		</properties>
 	</rule>
