@@ -185,6 +185,10 @@ class WSS_Settings {
 			$clean['auth_header_value'] = '';
 		} elseif ( isset( $raw_post['auth_header_value'] ) && '' !== trim( $raw_post['auth_header_value'] ) ) {
 			$clean['auth_header_value'] = sanitize_text_field( $raw_post['auth_header_value'] );
+		} elseif ( '' !== $stored['auth_header_value'] && '' !== $clean['feed_url']
+			&& ! wss_same_feed_host( $clean['feed_url'], $stored['feed_url'] ) ) {
+			// A kept secret is only ever sent to the host it was saved for (see wss_same_feed_host()).
+			$errors['auth_header_value'] = __( 'The feed URL now points at a different host. Enter the auth header value again, or tick the box to clear it.', 'woo-stock-sync' );
 		}
 
 		$upload = $this->handle_upload();

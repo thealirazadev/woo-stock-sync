@@ -50,7 +50,7 @@ msgstr ""
 
 #: includes/class-wss-admin.php:147
 #: includes/class-wss-admin.php:148
-#: includes/class-wss-admin.php:510
+#: includes/class-wss-admin.php:513
 #: includes/class-wss-settings.php:60
 msgid "Stock Sync"
 msgstr ""
@@ -68,174 +68,174 @@ msgid "Could not load columns. Check the feed source in Settings."
 msgstr ""
 
 #: includes/class-wss-admin.php:198
-#: includes/class-wss-admin.php:247
-#: includes/class-wss-admin.php:287
-#: includes/class-wss-admin.php:317
-#: includes/class-wss-admin.php:351
-#: includes/class-wss-admin.php:387
-#: includes/class-wss-admin.php:418
+#: includes/class-wss-admin.php:250
+#: includes/class-wss-admin.php:290
+#: includes/class-wss-admin.php:320
+#: includes/class-wss-admin.php:354
+#: includes/class-wss-admin.php:390
+#: includes/class-wss-admin.php:421
 msgid "You do not have permission to do this."
 msgstr ""
 
-#: includes/class-wss-admin.php:260
-#: includes/class-wss-admin.php:552
-#: includes/class-wss-admin.php:631
+#: includes/class-wss-admin.php:263
+#: includes/class-wss-admin.php:555
+#: includes/class-wss-admin.php:634
 msgid "That sync run could not be found."
 msgstr ""
 
-#: includes/class-wss-admin.php:459
+#: includes/class-wss-admin.php:462
 msgid "You do not have permission to access this page."
 msgstr ""
 
-#: includes/class-wss-admin.php:486
+#: includes/class-wss-admin.php:489
 msgid "Runs"
 msgstr ""
 
-#: includes/class-wss-admin.php:487
+#: includes/class-wss-admin.php:490
 msgid "Settings"
 msgstr ""
 
-#: includes/class-wss-admin.php:536
+#: includes/class-wss-admin.php:539
 msgid "Fetch and preview"
 msgstr ""
 
-#: includes/class-wss-admin.php:551
+#: includes/class-wss-admin.php:554
 msgid "Sync Run"
 msgstr ""
 
-#: includes/class-wss-admin.php:625
+#: includes/class-wss-admin.php:628
 msgid "Settings saved."
 msgstr ""
 
-#: includes/class-wss-admin.php:626
+#: includes/class-wss-admin.php:629
 msgid "Configure the feed source and column mapping in Settings first."
 msgstr ""
 
-#: includes/class-wss-admin.php:627
+#: includes/class-wss-admin.php:630
 msgid "Sync started. The preview will appear here shortly."
 msgstr ""
 
-#: includes/class-wss-admin.php:628
+#: includes/class-wss-admin.php:631
 #: includes/class-wss-runner.php:275
 msgid "A sync is already running. Wait for it to finish before starting another."
 msgstr ""
 
-#: includes/class-wss-admin.php:629
+#: includes/class-wss-admin.php:632
 msgid "The sync could not be started. Please try again."
 msgstr ""
 
-#: includes/class-wss-admin.php:630
+#: includes/class-wss-admin.php:633
 msgid "Applying the sync in the background. Progress appears below."
 msgstr ""
 
-#: includes/class-wss-admin.php:632
+#: includes/class-wss-admin.php:635
 msgid "That action is not available for this run in its current state."
 msgstr ""
 
-#: includes/class-wss-admin.php:633
+#: includes/class-wss-admin.php:636
 msgid "Rolling back the sync in the background. Progress appears below."
 msgstr ""
 
-#: includes/class-wss-admin.php:634
+#: includes/class-wss-admin.php:637
 msgid "Only the most recent applied run can be rolled back."
 msgstr ""
 
-#: includes/class-wss-admin.php:635
+#: includes/class-wss-admin.php:638
 msgid "There is no applied run to roll back."
 msgstr ""
 
-#: includes/class-wss-admin.php:636
+#: includes/class-wss-admin.php:639
 msgid "The stale sync lock was released."
 msgstr ""
 
-#: includes/class-wss-admin.php:637
+#: includes/class-wss-admin.php:640
 msgid "There is no stale lock to release."
 msgstr ""
 
-#: includes/class-wss-admin.php:638
+#: includes/class-wss-admin.php:641
 msgid "The previewed run was cancelled."
 msgstr ""
 
-#: includes/class-wss-feed.php:29
+#: includes/class-wss-feed.php:33
 msgid "A temporary file for the feed could not be created."
 msgstr ""
 
-#: includes/class-wss-feed.php:54
+#: includes/class-wss-feed.php:58
 msgid "The feed URL could not be reached. Check the URL and your connection, then try again."
 msgstr ""
 
 #. translators: %d: HTTP status code.
-#: includes/class-wss-feed.php:71
+#: includes/class-wss-feed.php:75
 #, php-format
 msgid "The feed URL returned HTTP %d. Check the URL and the auth header in Settings."
 msgstr ""
 
-#: includes/class-wss-feed.php:114
+#: includes/class-wss-feed.php:118
 #: includes/class-wss-runner.php:262
 msgid "No feed URL is configured."
 msgstr ""
 
-#: includes/class-wss-feed.php:131
+#: includes/class-wss-feed.php:135
 msgid "The feed file is not available. Upload a feed file in Settings."
 msgstr ""
 
-#: includes/class-wss-feed.php:210
-#: includes/class-wss-feed.php:358
+#: includes/class-wss-feed.php:214
+#: includes/class-wss-feed.php:362
 msgid "The feed file could not be opened."
 msgstr ""
 
-#: includes/class-wss-feed.php:217
-#: includes/class-wss-feed.php:364
+#: includes/class-wss-feed.php:221
+#: includes/class-wss-feed.php:368
 msgid "The feed file has no header row."
 msgstr ""
 
-#: includes/class-wss-feed.php:237
+#: includes/class-wss-feed.php:241
 msgid "The JSON feed must be a flat array of objects."
 msgstr ""
 
-#: includes/class-wss-feed.php:252
+#: includes/class-wss-feed.php:256
 msgid "The JSON feed is larger than the supported size. Use a CSV feed for very large catalogs."
 msgstr ""
 
-#: includes/class-wss-feed.php:257
+#: includes/class-wss-feed.php:261
 msgid "The feed file could not be read."
 msgstr ""
 
-#: includes/class-wss-feed.php:262
+#: includes/class-wss-feed.php:266
 msgid "The JSON feed could not be parsed. It must be a flat array of objects."
 msgstr ""
 
-#: includes/class-wss-feed.php:266
+#: includes/class-wss-feed.php:270
 msgid "The JSON feed is empty."
 msgstr ""
 
 #. translators: %s: comma-separated list of column names.
-#: includes/class-wss-feed.php:376
+#: includes/class-wss-feed.php:380
 #, php-format
 msgid "The feed is missing these mapped columns: %s. Check the column mapping in Settings against the feed header."
 msgstr ""
 
 #. translators: %s: maximum row count.
-#: includes/class-wss-feed.php:473
+#: includes/class-wss-feed.php:477
 #, php-format
 msgid "The feed has more than %s rows, the supported maximum. Split it into smaller feeds."
 msgstr ""
 
-#: includes/class-wss-feed.php:512
+#: includes/class-wss-feed.php:516
 msgid "The SKU cell is empty."
 msgstr ""
 
-#: includes/class-wss-feed.php:516
+#: includes/class-wss-feed.php:520
 msgid "This SKU already appeared earlier in the feed; the first row wins."
 msgstr ""
 
 #. translators: 1: field name, 2: offending value.
-#: includes/class-wss-feed.php:550
+#: includes/class-wss-feed.php:554
 #, php-format
 msgid "The %1$s value \"%2$s\" is not a valid non-negative number."
 msgstr ""
 
-#: includes/class-wss-feed.php:569
+#: includes/class-wss-feed.php:573
 msgid "The sale price must be lower than the regular price."
 msgstr ""
 
@@ -272,12 +272,12 @@ msgid "Stock"
 msgstr ""
 
 #: includes/class-wss-rows-table.php:259
-#: templates/admin/settings.php:176
+#: templates/admin/settings.php:178
 msgid "Regular price"
 msgstr ""
 
 #: includes/class-wss-rows-table.php:260
-#: templates/admin/settings.php:180
+#: templates/admin/settings.php:182
 msgid "Sale price"
 msgstr ""
 
@@ -291,30 +291,30 @@ msgstr ""
 
 #: includes/class-wss-rows-table.php:309
 #: includes/class-wss-runs-table.php:49
-#: includes/wss-functions.php:223
+#: includes/wss-functions.php:246
 msgid "Planned"
 msgstr ""
 
 #: includes/class-wss-rows-table.php:310
-#: includes/wss-functions.php:224
+#: includes/wss-functions.php:247
 msgid "No change"
 msgstr ""
 
 #: includes/class-wss-rows-table.php:311
 #: includes/class-wss-runs-table.php:50
-#: includes/wss-functions.php:225
+#: includes/wss-functions.php:248
 msgid "Skipped"
 msgstr ""
 
 #: includes/class-wss-rows-table.php:312
 #: includes/class-wss-runs-table.php:51
-#: includes/wss-functions.php:221
+#: includes/wss-functions.php:244
 msgid "Failed"
 msgstr ""
 
 #: includes/class-wss-rows-table.php:313
 #: includes/class-wss-runs-table.php:52
-#: includes/wss-functions.php:217
+#: includes/wss-functions.php:240
 msgid "Applied"
 msgstr ""
 
@@ -417,91 +417,95 @@ msgstr ""
 msgid "The header name contains invalid characters."
 msgstr ""
 
-#: includes/class-wss-settings.php:229
+#: includes/class-wss-settings.php:191
+msgid "The feed URL now points at a different host. Enter the auth header value again, or tick the box to clear it."
+msgstr ""
+
+#: includes/class-wss-settings.php:233
 msgid "Map the SKU column. It is required to match feed rows to products."
 msgstr ""
 
-#: includes/class-wss-settings.php:232
+#: includes/class-wss-settings.php:236
 msgid "Map at least one of stock, regular price, or sale price."
 msgstr ""
 
-#: includes/class-wss-settings.php:268
+#: includes/class-wss-settings.php:272
 msgid "The feed file could not be uploaded. Please try again."
 msgstr ""
 
-#: includes/class-wss-settings.php:272
+#: includes/class-wss-settings.php:276
 msgid "The feed file is larger than the allowed size."
 msgstr ""
 
-#: includes/class-wss-settings.php:284
+#: includes/class-wss-settings.php:288
 msgid "Only .csv and .json feed files are accepted."
 msgstr ""
 
-#: includes/class-wss-settings.php:288
+#: includes/class-wss-settings.php:292
 msgid "The upload could not be verified."
 msgstr ""
 
-#: includes/class-wss-settings.php:299
+#: includes/class-wss-settings.php:303
 msgid "The feed file type could not be verified as CSV or JSON."
 msgstr ""
 
-#: includes/class-wss-settings.php:311
+#: includes/class-wss-settings.php:315
 msgid "The feed file could not be saved."
 msgstr ""
 
-#: includes/class-wss-settings.php:329
+#: includes/class-wss-settings.php:333
 msgid "The feed storage directory could not be created."
 msgstr ""
 
-#: includes/wss-functions.php:212
+#: includes/wss-functions.php:235
 msgid "Pending"
 msgstr ""
 
-#: includes/wss-functions.php:213
+#: includes/wss-functions.php:236
 msgid "Fetching"
 msgstr ""
 
-#: includes/wss-functions.php:214
+#: includes/wss-functions.php:237
 msgid "Diffing"
 msgstr ""
 
-#: includes/wss-functions.php:215
+#: includes/wss-functions.php:238
 msgid "Previewed"
 msgstr ""
 
-#: includes/wss-functions.php:216
+#: includes/wss-functions.php:239
 msgid "Applying"
 msgstr ""
 
-#: includes/wss-functions.php:218
+#: includes/wss-functions.php:241
 msgid "Rolling back"
 msgstr ""
 
-#: includes/wss-functions.php:219
+#: includes/wss-functions.php:242
 msgid "Rolled back"
 msgstr ""
 
-#: includes/wss-functions.php:220
+#: includes/wss-functions.php:243
 msgid "Cancelled"
 msgstr ""
 
-#: includes/wss-functions.php:222
+#: includes/wss-functions.php:245
 msgid "Staged"
 msgstr ""
 
-#: includes/wss-functions.php:226
+#: includes/wss-functions.php:249
 msgid "Apply failed"
 msgstr ""
 
-#: includes/wss-functions.php:227
+#: includes/wss-functions.php:250
 msgid "Rollback failed"
 msgstr ""
 
-#: includes/wss-functions.php:228
+#: includes/wss-functions.php:251
 msgid "Locked"
 msgstr ""
 
-#: includes/wss-functions.php:229
+#: includes/wss-functions.php:252
 msgid "Stalled"
 msgstr ""
 
@@ -640,133 +644,133 @@ msgstr ""
 msgid "Auth header value"
 msgstr ""
 
-#: templates/admin/settings.php:82
+#: templates/admin/settings.php:84
 msgid "Clear the stored header value"
 msgstr ""
 
-#: templates/admin/settings.php:85
+#: templates/admin/settings.php:87
 msgid "A value is stored. Leave blank to keep it, enter a new value to replace it, or tick the box to remove it."
 msgstr ""
 
-#: templates/admin/settings.php:87
+#: templates/admin/settings.php:89
 msgid "Optional. Stored securely and never shown again after saving."
 msgstr ""
 
-#: templates/admin/settings.php:92
+#: templates/admin/settings.php:94
 msgid "Upload feed file"
 msgstr ""
 
 #. translators: %s: uploaded file name.
-#: templates/admin/settings.php:102
+#: templates/admin/settings.php:104
 #, php-format
 msgid "Current file: %s"
 msgstr ""
 
-#: templates/admin/settings.php:108
+#: templates/admin/settings.php:110
 msgid "Used when the source type is Uploaded file. CSV or JSON, up to 64 MB."
 msgstr ""
 
-#: templates/admin/settings.php:114
+#: templates/admin/settings.php:116
 msgid "Schedule"
 msgstr ""
 
-#: templates/admin/settings.php:118
+#: templates/admin/settings.php:120
 msgid "Automatic fetch"
 msgstr ""
 
-#: templates/admin/settings.php:122
+#: templates/admin/settings.php:124
 msgid "Manual only"
 msgstr ""
 
-#: templates/admin/settings.php:123
+#: templates/admin/settings.php:125
 msgid "Hourly"
 msgstr ""
 
-#: templates/admin/settings.php:124
+#: templates/admin/settings.php:126
 msgid "Twice daily"
 msgstr ""
 
-#: templates/admin/settings.php:125
+#: templates/admin/settings.php:127
 msgid "Daily"
 msgstr ""
 
-#: templates/admin/settings.php:135
+#: templates/admin/settings.php:137
 msgid "How often to fetch the remote feed automatically. Scheduled runs stop at the preview unless auto-apply is enabled."
 msgstr ""
 
-#: templates/admin/settings.php:139
+#: templates/admin/settings.php:141
 msgid "Scheduled runs"
 msgstr ""
 
-#: templates/admin/settings.php:143
+#: templates/admin/settings.php:145
 msgid "Stop at preview (review before applying)"
 msgstr ""
 
-#: templates/admin/settings.php:146
+#: templates/admin/settings.php:148
 msgid "Apply automatically"
 msgstr ""
 
-#: templates/admin/settings.php:149
+#: templates/admin/settings.php:151
 msgid "Auto-apply writes changes without review. Use with care."
 msgstr ""
 
-#: templates/admin/settings.php:155
+#: templates/admin/settings.php:157
 msgid "Column mapping"
 msgstr ""
 
-#: templates/admin/settings.php:157
+#: templates/admin/settings.php:159
 msgid "Match feed columns to product fields. A blank cell in the feed means \"no change\" for that field."
 msgstr ""
 
-#: templates/admin/settings.php:158
+#: templates/admin/settings.php:160
 msgid "Load columns"
 msgstr ""
 
-#: templates/admin/settings.php:165
+#: templates/admin/settings.php:167
 msgid "SKU column (required)"
 msgstr ""
 
-#: templates/admin/settings.php:172
+#: templates/admin/settings.php:174
 msgid "Stock quantity"
 msgstr ""
 
-#: templates/admin/settings.php:187
+#: templates/admin/settings.php:189
 msgid "Treat a blank sale price cell as \"clear the sale price\""
 msgstr ""
 
-#: templates/admin/settings.php:195
+#: templates/admin/settings.php:197
 msgid "Price markup"
 msgstr ""
 
-#: templates/admin/settings.php:197
+#: templates/admin/settings.php:199
 msgid "Optionally mark supplier prices up before they are written. The markup applies to the regular price and the sale price only, never to stock, and the dry-run diff shows the final adjusted price."
 msgstr ""
 
-#: templates/admin/settings.php:202
+#: templates/admin/settings.php:204
 msgid "Markup type"
 msgstr ""
 
-#: templates/admin/settings.php:206
+#: templates/admin/settings.php:208
 msgid "None (pass the supplier price through)"
 msgstr ""
 
-#: templates/admin/settings.php:207
+#: templates/admin/settings.php:209
 msgid "Percentage"
 msgstr ""
 
-#: templates/admin/settings.php:208
+#: templates/admin/settings.php:210
 msgid "Fixed amount"
 msgstr ""
 
-#: templates/admin/settings.php:221
+#: templates/admin/settings.php:223
 msgid "Markup amount"
 msgstr ""
 
-#: templates/admin/settings.php:225
+#: templates/admin/settings.php:227
 msgid "For a percentage, enter 15 to add 15%. For a fixed amount, the value is added in the store currency. Zero passes the supplier price through unchanged. A markup that would make a price negative is stored as 0."
 msgstr ""
 
-#: templates/admin/settings.php:231
+#: templates/admin/settings.php:233
 msgid "Save settings"
 msgstr ""
 

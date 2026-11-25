@@ -127,6 +127,29 @@ function wss_adjust_price( $price, $type, $value, $decimals = 2 ) {
 }
 
 /**
+ * Whether two feed URLs point at the same host, so a stored auth header may be sent to both.
+ *
+ * The auth header value is write-only in the admin: it is masked and never shown again. Sending
+ * it to whatever URL is configured next would let anyone who can edit the settings read it back
+ * by pointing the feed at a server they control. The stored value is therefore only reused for
+ * the host it was saved with; a new host needs the value entered again.
+ *
+ * @param string $url   Candidate feed URL.
+ * @param string $saved URL the stored auth header value was saved with.
+ * @return bool True when both URLs have the same non-empty host (case-insensitive).
+ */
+function wss_same_feed_host( $url, $saved ) {
+	$host       = wp_parse_url( (string) $url, PHP_URL_HOST );
+	$saved_host = wp_parse_url( (string) $saved, PHP_URL_HOST );
+
+	if ( ! is_string( $host ) || ! is_string( $saved_host ) || '' === $host ) {
+		return false;
+	}
+
+	return strtolower( $host ) === strtolower( $saved_host );
+}
+
+/**
  * Absolute path to the protected uploads subdirectory for feed files.
  *
  * @return string

@@ -30,7 +30,7 @@ any stage -> failed                            applied -> rolling_back -> rolled
 ```
 
 1. Fetch and stage (`wss_fetch_run` async action): resolve the source (uploaded file path, or
-   remote URL downloaded to a temp file via `wp_remote_get` with `stream => true` and the
+   remote URL downloaded to a temp file via `wp_safe_remote_get` with `stream => true` and the
    configured auth header). Stream-parse CSV with `fgetcsv` (JSON: decode whole file under a
    documented 20 MB size cap), apply the mapping snapshot, validate each row's values
    (numeric, non-negative; sale < regular when both present), and insert one `wss_rows` row per
@@ -148,7 +148,7 @@ woo-stock-sync/
 - WooCommerce CRUD for all product writes: `wc_get_product` / setters / `save()` keep caches,
   lookup tables (`wc_product_meta_lookup`), stock status transitions, and third-party hooks
   correct. Direct SQL writes to products are forbidden.
-- Streaming CSV via `fgetcsv` and `wp_remote_get( ..., array( 'stream' => true ) )`: constant
+- Streaming CSV via `fgetcsv` and `wp_safe_remote_get( ..., array( 'stream' => true ) )`: constant
   memory regardless of feed size. JSON has no streaming parser in core, so JSON feeds are decoded
   whole under a 20 MB cap - a documented trade-off; suppliers with bigger feeds use CSV.
 - Vanilla JS + plain CSS in admin: the UI is forms, tables, and a polled progress bar; a framework
@@ -238,10 +238,12 @@ Options and meta:
 - Runtime: WooCommerce active (checked at bootstrap; activation blocked with an admin notice
   otherwise). Action Scheduler arrives bundled with WooCommerce.
 - Remote feed: any HTTPS/HTTP endpoint returning CSV or a flat JSON array; one optional custom
-  auth header. Feed URLs are restricted to http/https schemes.
+  auth header. Feed URLs are restricted to http/https schemes and fetched with
+  `wp_safe_remote_get()`, so loopback and private-network hosts are refused unless allowed through
+  core's `http_request_host_is_external` filter.
 - Secrets: the auth header value is entered on the settings screen, stored in the `wss_settings`
-  option (same trust level as WooCommerce payment gateway keys), rendered masked, and never written
-  to logs or run records. The plugin reads no environment variables and has no `.env`, so no
+  option (same trust level as WooCommerce payment gateway keys), rendered masked, never written
+  to logs or run records, and only sent to the host it was saved with. The plugin reads no environment variables and has no `.env`, so no
   `.env.example` ships. Local dev/QA uses `tests/fixtures/sample-feed.csv`, which needs no auth.
 - Dev dependencies (Composer): `squizlabs/php_codesniffer`, `wp-coding-standards/wpcs`,
   `phpcompatibility/phpcompatibility-wp`, `phpunit/phpunit`, WordPress test-suite scaffolding.
