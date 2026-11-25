@@ -16,7 +16,11 @@ class WSS_Feed {
 	 * Download a remote feed to a temporary file, sending the optional auth header.
 	 *
 	 * The response body is streamed to disk so memory stays flat regardless of feed size. The auth
-	 * header value is used but never logged.
+	 * header value is used but never logged. The URL is operator-supplied, so the request goes
+	 * through wp_safe_remote_get(): loopback, private-network, and non-standard-port targets (and
+	 * redirects to them) are refused, which keeps the feed setting from being used to probe the
+	 * server's internal network. A site whose supplier feed really lives on a private host can allow
+	 * it with core's `http_request_host_is_external` filter.
 	 *
 	 * @param string $url          Feed URL (http/https).
 	 * @param string $header_name  Optional auth header name.
@@ -40,7 +44,7 @@ class WSS_Feed {
 			$args['headers'][ $header_name ] = $header_value;
 		}
 
-		$response = wp_remote_get( $url, $args );
+		$response = wp_safe_remote_get( $url, $args );
 
 		if ( is_wp_error( $response ) ) {
 			wp_delete_file( $tmp );
