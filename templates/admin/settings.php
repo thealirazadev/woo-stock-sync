@@ -74,7 +74,9 @@ $wss_has_secret = ( '' !== $settings['auth_header_value'] );
 				<th scope="row"><label for="wss-auth-value"><?php esc_html_e( 'Auth header value', 'woo-stock-sync' ); ?></label></th>
 				<td>
 					<input type="password" class="regular-text" id="wss-auth-value" name="auth_header_value" autocomplete="new-password"
-						value="" placeholder="<?php echo $wss_has_secret ? esc_attr( WSS_Settings::MASK ) : ''; ?>" />
+						value="" placeholder="<?php echo $wss_has_secret ? esc_attr( WSS_Settings::MASK ) : ''; ?>"
+						<?php echo empty( $errors['auth_header_value'] ) ? '' : 'aria-invalid="true" aria-describedby="auth_header_value-error"'; ?> />
+					<?php $this->field_error( 'auth_header_value' ); ?>
 					<?php if ( $wss_has_secret ) : ?>
 						<p class="description">
 							<label>

@@ -215,6 +215,9 @@ class WSS_Admin {
 		}
 		if ( isset( $post['auth_header_value'] ) && '' !== trim( $post['auth_header_value'] ) ) {
 			$settings['auth_header_value'] = sanitize_text_field( $post['auth_header_value'] );
+		} elseif ( ! wss_same_feed_host( $settings['feed_url'], wss_get_settings()['feed_url'] ) ) {
+			// Never send the stored secret to a host other than the one it was saved for.
+			$settings['auth_header_value'] = '';
 		}
 
 		$feed    = new WSS_Feed();

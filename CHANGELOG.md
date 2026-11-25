@@ -10,6 +10,15 @@ history.
 
 ## [Unreleased]
 
+### Security
+
+- Remote feeds are fetched with `wp_safe_remote_get()`, so a feed URL can no longer make the server
+  request loopback or private-network addresses. Sites with a supplier feed on a private host can
+  allow it through core's `http_request_host_is_external` filter.
+- The stored auth header value is only sent to the host it was saved for. Changing the feed URL to
+  another host requires entering the value again (or clearing it), and the column-listing request
+  no longer attaches the stored value to an unsaved URL on a different host.
+
 ## [1.0.0] - 2026-07-23
 
 Initial release. Synchronizes WooCommerce stock quantities and prices from a supplier feed by SKU,
