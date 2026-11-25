@@ -127,7 +127,7 @@ woo-stock-sync/
     test-lock.php                   Overlap protection and stale-lock release
     test-cli.php                    CLI command wiring and exit codes
 
-  docs/                             Planning + handoff documentation (this folder)
+  docs/                             Architecture, design, API contracts, testing, and decisions
   README.md                         Root project doc
 ```
 
@@ -216,7 +216,7 @@ Options and meta:
 
 | Key | Where | Purpose |
 | --- | --- | --- |
-| `wss_settings` | option | source type, url, auth header name + value, schedule interval, scheduled mode (preview_only or auto_apply), mapping, blank-sale-clears flag |
+| `wss_settings` | option | source type, url, auth header name + value, schedule interval, scheduled mode (preview_only or auto_apply), mapping, blank-sale-clears flag, price markup type (none, percentage, fixed) and value |
 | `wss_db_version` | option | applied schema version for migrations |
 | `wss_active_run` | option | mutex holding the active run ID |
 | `_wss_locked` | product meta | 'yes' when the product is locked from sync |

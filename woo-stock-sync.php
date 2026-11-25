@@ -28,7 +28,7 @@ define( 'WSS_BASENAME', plugin_basename( __FILE__ ) );
 
 /*
  * Processing caps. Deliberately constants (with filters at the point of use), not settings, so a
- * store owner cannot tune the plugin into an out-of-memory or timeout situation. See docs/rules.md.
+ * store owner cannot tune the plugin into an out-of-memory or timeout situation.
  */
 define( 'WSS_ROW_CAP', 50000 );
 define( 'WSS_JSON_MAX_BYTES', 20 * 1024 * 1024 );

@@ -14,8 +14,8 @@ By participating you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md)
 - Fix a bug or implement an accepted feature with a pull request.
 
 If you plan to work on something non-trivial, please open an issue first so we can agree on the
-approach before you invest time. Product behaviour is defined in `docs/PRD.md` and
-`docs/architecture.md`; those are the source of truth and are not changed casually.
+approach before you invest time. The design and its trade-offs are described in
+`docs/architecture.md` and `docs/decisions.md`.
 
 ## Development setup
 
@@ -43,8 +43,8 @@ PHPUnit polyfills.
 - Every user-facing string is wrapped in a translation function against the `woo-stock-sync` text
   domain. Escape all output at the point of echo.
 - No JS build step: plain vanilla JavaScript and CSS only.
-- The full engineering rulebook lives in [`docs/rules.md`](docs/rules.md); please read it before your
-  first change.
+- The reasoning behind these rules (custom tables, CRUD-only writes, batching, locking, rollback) is
+  in [`docs/decisions.md`](docs/decisions.md); please read it before your first change.
 
 Run the linter, and let it auto-fix what it can:
 

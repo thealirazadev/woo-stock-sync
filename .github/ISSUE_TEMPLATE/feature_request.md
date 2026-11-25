@@ -7,7 +7,7 @@ assignees: ''
 ---
 
 <!--
-The plugin's scope is defined in docs/PRD.md and docs/architecture.md. v1 is deliberately
+The plugin's scope is described in README.md and docs/decisions.md. v1 is deliberately
 update-only: it updates existing products matched by SKU and never creates products from a feed.
 Requests that fit that scope are the easiest to accept.
 -->
@@ -30,7 +30,7 @@ Any workarounds you are using now, or other approaches you thought about.
 
 - [ ] This is about updating existing products by SKU (in scope), not creating products from a feed
       (out of scope for v1).
-- [ ] I have read the relevant part of `docs/PRD.md` and this is not already covered.
+- [ ] I have read the README and `docs/decisions.md`, and this is not already covered.
 
 ## Additional context
 

@@ -54,9 +54,37 @@ The pipeline against real products created in the test DB:
 What automation cannot cover: real Action Scheduler timing on a live site, killing a worker
 mid-apply and resuming, admin UX (progress polling, badges, empty states, keyboard operation,
 focus), remote fetch against a real HTTP server with auth, and behavior on Storefront with
-WP_DEBUG on. The per-phase manual checklists and verification sections live in `docs/phases.md`.
-Fixture feed for manual runs: `tests/fixtures/sample-feed.csv` (valid rows, an unknown SKU, a
-non-numeric price, a sale >= regular row, a duplicate SKU, and a row for a product to be locked).
+WP_DEBUG on. Fixture feed for manual runs: `tests/fixtures/sample-feed.csv` (valid rows, an
+unknown SKU, a non-numeric price, a sale >= regular row, a duplicate SKU, and a row for a product
+to be locked).
+
+Manual checklist:
+
+- Activate with WooCommerce off: notice shown, no fatal. With it on, the three `wss_` tables exist.
+- Save settings with no SKU column mapped: field error, nothing saved.
+- Upload the fixture CSV, map columns, fetch: the run reaches previewed and the diff shows the
+  expected planned, no_change, unknown_sku and failed rows. The same file served over HTTP with an
+  auth header gives an identical diff; a 404 or 401 fails the run with a friendly message.
+- Apply the fixture run: valid rows update, unknown-SKU, invalid and locked rows are untouched, and
+  the summary counts match the diff. Locking a variable parent skips its variations too.
+- Stop the worker mid-apply: the run screen shows Resume after the stall window, and resuming
+  completes the run with no double stock write.
+- Start a second sync while one is applying: refused. Release lock clears a stale lock.
+- Roll back the applied run: prior stock and prices are restored; a product deleted first is
+  rollback_failed / product_missing while the rest restore. Older applied runs offer no rollback.
+- Hourly schedule: exactly one recurring action in Tools > Scheduled Actions; running it creates a
+  run that stops at previewed, or applies when auto_apply is on; with the lock held it skips.
+- Progress bar advances during a large apply and polling stops at the terminal status. Cancelling a
+  previewed run removes the Apply button.
+- CLI only: fetch, dry-run, apply --yes, rollback --yes, with runs visible in the admin history.
+  `wp wss dry-run --format=json` parses; `apply` while the lock is held and `rollback` with nothing
+  applied exit 1.
+- Price markup: +15% turns a 20.00 feed price into 23.00 in the diff and on apply; +5.00 fixed
+  turns 10.00 into 15.00; none or 0 shows the raw price; a markdown below zero writes 0.00; rollback
+  restores the prior prices.
+- Keyboard-only walk of Settings, runs list, run detail, and the confirmations, with visible focus
+  and announced progress. Uninstall removes tables, options, meta, uploaded feeds, and scheduled
+  actions.
 
 ## Exact commands
 
@@ -139,14 +167,25 @@ Notes:
   wp-env uses MariaDB too, so this matches the usual WordPress setup.
 - The database is dropped and recreated by the test suite on each run; never point it at real data.
 
+## Continuous integration
+
+`.github/workflows/ci.yml` runs on every push and pull request to `main` with two jobs, both on
+PHP 8.2:
+
+- **Lint and test**: `composer install`, `composer run lint` (phpcs), `php -l` over every PHP file
+  outside `vendor/`, and `composer run test` in stub mode (no WordPress, so integration tests
+  self-skip).
+- **Integration tests**: a `mariadb:11.4` service, then the same provisioning steps as above for
+  WordPress 6.8.2, its core test library, and WooCommerce 10.6.2, followed by `composer run test`
+  in integration mode.
+
+`composer run build` is not part of CI because it needs WP-CLI and the dist-archive package.
+
 ## Definition of "done" gate
 
-After creating or editing files, run build/tests and fix all errors before reporting done. A
-feature is not done until:
+A change is not done until:
 
 1. `composer run lint` is clean.
-2. `composer run test` passes.
-3. The relevant manual checklist items in `docs/phases.md` pass.
+2. `composer run test` passes, in integration mode if the change touches the pipeline.
+3. The relevant manual checklist items above pass.
 4. The browser console and PHP debug log show no new warnings or notices on the touched screens.
-
-Build and tests must pass before a feature is committed and before a phase is marked complete.

@@ -34,8 +34,8 @@ Status: implemented (v1.0.0)
 
 ## Design decisions
 
-The trade-offs that shaped v1, with the alternatives that were considered and rejected. Full
-rationale lives in `docs/architecture.md` and `docs/PRD.md`.
+The trade-offs that shaped v1, with the alternatives that were considered and rejected. The full
+list, including the edge cases found along the way, is in `docs/decisions.md`.
 
 - **Custom tables over post meta.** Runs, per-row results, and snapshots live in three narrow InnoDB
   tables, not post meta. A 10,000-row feed synced daily would otherwise write millions of meta rows
@@ -141,7 +141,6 @@ composer run build                   # wp dist-archive -> build/woo-stock-sync.z
 
 ## Documentation
 
-Planning docs live in `docs/`: `PRD.md` (requirements), `architecture.md` (design and data model),
-`rules.md` (engineering rules), `phases.md` (build plan), `design.md` (admin UI), `testing.md`
-(test strategy), `api-contracts.md` (admin-ajax and WP-CLI contracts), `memory.md` (work log),
-`launch-checklist.md` (release gate).
+Project docs live in `docs/`: `architecture.md` (design and data model), `decisions.md` (design
+decisions and the edge cases behind them), `design.md` (admin UI), `testing.md` (test strategy and
+CI), and `api-contracts.md` (admin-ajax and WP-CLI contracts).
